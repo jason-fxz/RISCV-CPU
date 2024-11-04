@@ -10,7 +10,7 @@ module ALU(
         input wire [31 : 0] r1,                         // operand 1
         input wire [31 : 0] r2,                         // operand 2
         input wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_in,  // rob index
-        input wire [4 : 0] rs_op_type,                  // operation type
+        input wire [`RS_TYPE_BIT - 1 : 0] rs_op_type,   // operation type
 
         output reg [31 : 0] result,                     // alu result
         output reg [`ROB_SIZE_BIT - 1 : 0] rob_idx,     // rob index
@@ -36,9 +36,47 @@ module ALU(
     localparam BGEU   = 5'b111;
 
 
-    always @()
+    always @(posedge clk_in) begin
+        if (rst_in) begin
+            ready <= 0;
+            rob_idx <= 0;
+            result <= 0;
+        end
+        else if (!rdy_in) begin
+            // do nothing
+        end
+        else if (!valid) begin
+            ready <= 0; // Input are not valid
+        end
+        else begin
+            ready <= 1'b1;
+            rob_idx <= rob_idx_in;
 
-
+            // 
+            if (rs_op_type[5:4] == 2'b01) begin // 01yxxx
+                case (rs_op_type[2:0])
+                    ADDSUB: result <= rs_op_type[3] ? r1 - r2 : r1 + r2;
+                    AND:    result <= r1 & r2;
+                    OR:     result <= r1 | r2;
+                    XOR:    result <= r1 ^ r2;
+                    SLL:    result <= r1 << r2[4:0];
+                    SRLA:   result <= rs_op_type[3] ? $signed(r1) >>> r2[4:0] : r1 >> r2[4:0];
+                    SLT:    result <= $signed(r1) < $signed(r2) ? 1 : 0;
+                    SLTU:   result <= $unsigned(r1) < $unsigned(r2) ? 1 : 0;
+                endcase
+            end
+            else begin // 110xxx
+                case (rs_op_type[2:0])
+                    BEQ:  result <= r1 == r2 ? 1 : 0;
+                    BNE:  result <= r1 != r2 ? 1 : 0;
+                    BLT:  result <= $signed(r1) < $signed(r2) ? 1 : 0;
+                    BGE:  result <= $signed(r1) >= $signed(r2) ? 1 : 0;
+                    BLTU: result <= $unsigned(r1) < $unsigned(r2) ? 1 : 0;
+                    BGEU: result <= $unsigned(r1) >= $unsigned(r2) ? 1 : 0;
+                endcase
+            end
+        end
+    end
 
 
 endmodule //ALU
