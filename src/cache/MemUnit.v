@@ -29,7 +29,7 @@ module MemUnit(
     input  wire [ 2:0]          len,
     input  wire [31:0]          data_in, // data to write
     output wire [31:0]          data_out, // data read
-    output reg                  ready
+    output wire                 ready
 );
     reg           cur_wr;
     reg    [31:0] cur_addr;
@@ -44,14 +44,14 @@ module MemUnit(
     // State: have read x Byte
     reg    [1:0]  state;
 
-    wire   need_work = valid && !ready;
-    
+    wire   need_work = valid;
+    wire   totalbyte = len[1] ? 4 : len[0] ? 2 : 1;
+    assign ready = valid && (totalbyte - 1 == state);
 
     wire   direct = (state == 2'b00) && need_work;
     assign mem_a = direct ? addr : cur_addr;
     assign mem_wr = direct ? wr : cur_wr;
     assign mem_dout = direct ? data_in[7:0] : cur_data_to_write;
-
 
 
     always @(posedge clk_in) begin
@@ -62,6 +62,8 @@ module MemUnit(
             cur_wr <= 0;
             cur_data_in <= 0;
             cur_data_to_write <= 0;
+            tmp_data <= 0;
+            // ready <= 0;
         end
         else if (rdy_in) begin
             ready <= 0;
@@ -81,7 +83,7 @@ module MemUnit(
                             cur_data_to_write <= 0;
                             cur_wr <= 0;
                             cur_addr <= 0;
-                            ready <= 1;
+                            // ready <= 1;
                         end
                     end
                 end
@@ -92,7 +94,7 @@ module MemUnit(
                         cur_data_to_write <= 0;
                         cur_wr <= 0;
                         cur_addr <= 0;
-                        ready <= 1;
+                        // ready <= 1;
                     end
                     else begin // Word
                         state <= 2'b10;
@@ -112,7 +114,7 @@ module MemUnit(
                     cur_data_to_write <= 0;
                     cur_wr <= 0;
                     cur_addr <= 0;
-                    ready <= 1;
+                    // ready <= 1;
                 end
             endcase
         end
