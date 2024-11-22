@@ -1,39 +1,39 @@
 `include "config.v"
 
 module ReservationStation (
-        input wire clk_in,        // system clock signal
-        input wire rst_in,        // reset signal
-        input wire rdy_in,        // ready signal, pause cpu when low
+    input wire clk_in,        // system clock signal
+    input wire rst_in,        // reset signal
+    input wire rdy_in,        // ready signal, pause cpu when low
 
-        input wire rob_clear,     // clear all register
+    input wire rob_clear,     // clear all register
 
-        /// From Decoder (Issue)
-        input wire                         inst_valid,      // instruction valid
-        input wire [ `RS_TYPE_BIT - 1 : 0] inst_type,       // instruction type
-        input wire [`ROB_SIZE_BIT - 1 : 0] inst_rob_idx,    // instruction rob index
-        input wire [               31 : 0] inst_r1,         // instruction operand 1
-        input wire [               31 : 0] inst_r2,         // instruction operand 2
-        input wire [`ROB_SIZE_BIT - 1 : 0] inst_dep1,       // instruction dependency 1
-        input wire [`ROB_SIZE_BIT - 1 : 0] inst_dep2,       // instruction dependency 2
-        input wire                         inst_has_dep1,   // instruction has dependency 1
-        input wire                         inst_has_dep2,   // instruction has dependency 2
-        output reg                         full,            // reservation station full
+    /// From Decoder (Issue)
+    input wire                         inst_valid,      // instruction valid
+    input wire [ `RS_TYPE_BIT - 1 : 0] inst_type,       // instruction type
+    input wire [`ROB_SIZE_BIT - 1 : 0] inst_rob_idx,    // instruction rob index
+    input wire [               31 : 0] inst_r1,         // instruction operand 1
+    input wire [               31 : 0] inst_r2,         // instruction operand 2
+    input wire [`ROB_SIZE_BIT - 1 : 0] inst_dep1,       // instruction dependency 1
+    input wire [`ROB_SIZE_BIT - 1 : 0] inst_dep2,       // instruction dependency 2
+    input wire                         inst_has_dep1,   // instruction has dependency 1
+    input wire                         inst_has_dep2,   // instruction has dependency 2
+    output reg                         full,            // reservation station full
 
-        /// To ALU
-        output wire                         alu_valid,      // alu valid
-        output wire [               31 : 0] alu_r1,         // alu operand 1
-        output wire [               31 : 0] alu_r2,         // alu operand 2
-        output wire [ `RS_TYPE_BIT - 1 : 0] alu_op,         // alu operation type
-        output wire [`ROB_SIZE_BIT - 1 : 0] alu_rob_idx,    // alu rob index
+    /// To ALU
+    output wire                         alu_valid,      // alu valid
+    output wire [               31 : 0] alu_r1,         // alu operand 1
+    output wire [               31 : 0] alu_r2,         // alu operand 2
+    output wire [ `RS_TYPE_BIT - 1 : 0] alu_op,         // alu operation type
+    output wire [`ROB_SIZE_BIT - 1 : 0] alu_rob_idx,    // alu rob index
 
-        /// From ROB Write Back to Update
-        input wire                         rob_wb_valid1,   // rob write back valid 1
-        input wire [`ROB_SIZE_BIT - 1 : 0] rob_wb_idx1,     // rob write back index
-        input wire [               31 : 0] rob_wb_val1,     // rob write back value
-        input wire                         rob_wb_valid2,   // rob write back valid 2
-        input wire [`ROB_SIZE_BIT - 1 : 0] rob_wb_idx2,     // rob write back index
-        input wire [               31 : 0] rob_wb_val2      // rob write back value
-    );
+    /// From ROB Write Back to Update
+    input wire                         rob_wb_valid1,   // rob write back valid 1
+    input wire [`ROB_SIZE_BIT - 1 : 0] rob_wb_idx1,     // rob write back index
+    input wire [               31 : 0] rob_wb_val1,     // rob write back value
+    input wire                         rob_wb_valid2,   // rob write back valid 2
+    input wire [`ROB_SIZE_BIT - 1 : 0] rob_wb_idx2,     // rob write back index
+    input wire [               31 : 0] rob_wb_val2      // rob write back value
+);
     // Reservation Station Data
     reg                          busy     [0 : `RS_SIZE - 1];
     reg [ `RS_TYPE_BIT - 1 : 0]  optype   [0 : `RS_SIZE - 1];

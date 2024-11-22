@@ -1,21 +1,21 @@
 `include "config.v"
 
 module ALU(
-        input wire  clk_in,        // system clock signal
-        input wire  rst_in,        // reset signal
-        input wire  rdy_in,        // ready signal, pause cpu when low
+    input wire  clk_in,        // system clock signal
+    input wire  rst_in,        // reset signal
+    input wire  rdy_in,        // ready signal, pause cpu when low
 
-        // from reservation station
-        input wire valid,                               // valid signal
-        input wire [31 : 0] r1,                         // operand 1
-        input wire [31 : 0] r2,                         // operand 2
-        input wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_in,  // rob index
-        input wire [`RS_TYPE_BIT - 1 : 0] rs_op_type,   // operation type
+    // from reservation station
+    input wire valid,                               // valid signal
+    input wire [31 : 0] r1,                         // operand 1
+    input wire [31 : 0] r2,                         // operand 2
+    input wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_in,  // rob index
+    input wire [`RS_TYPE_BIT - 1 : 0] rs_op_type,   // operation type
 
-        output reg [31 : 0] result,                     // alu result
-        output reg [`ROB_SIZE_BIT - 1 : 0] rob_idx,     // rob index
-        output reg ready                                // ready signal
-    );
+    output reg [31 : 0] result,                     // alu result
+    output reg [`ROB_SIZE_BIT - 1 : 0] rob_idx,     // rob index
+    output reg ready                                // ready signal
+);
 
     // Funct3 Code: arith R-type / arith I-type
     localparam ADDSUB = 5'b000; // Add: 000 000 / Sub: 000 010
