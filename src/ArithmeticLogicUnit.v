@@ -53,7 +53,7 @@ module ALU(
             rob_idx <= rob_idx_in;
 
             // 
-            if (rs_op_type[5:4] == 2'b01) begin // 01yxxx
+            if (rs_op_type[4] == 0) begin // 0yxxx
                 case (rs_op_type[2:0])
                     ADDSUB: result <= rs_op_type[3] ? r1 - r2 : r1 + r2;
                     AND:    result <= r1 & r2;
@@ -65,7 +65,7 @@ module ALU(
                     SLTU:   result <= $unsigned(r1) < $unsigned(r2) ? 1 : 0;
                 endcase
             end
-            else begin // 110xxx
+            else begin // 10xxx
                 case (rs_op_type[2:0])
                     BEQ:  result <= r1 == r2 ? 1 : 0;
                     BNE:  result <= r1 != r2 ? 1 : 0;
