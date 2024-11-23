@@ -27,12 +27,12 @@ module ReservationStation (
     output wire [`ROB_SIZE_BIT - 1 : 0] alu_rob_idx,    // alu rob index
 
     /// From ROB Write Back to Update
-    input wire                         rob_wb_valid1,   // rob write back valid 1
-    input wire [`ROB_SIZE_BIT - 1 : 0] rob_wb_idx1,     // rob write back index
-    input wire [               31 : 0] rob_wb_val1,     // rob write back value
-    input wire                         rob_wb_valid2,   // rob write back valid 2
-    input wire [`ROB_SIZE_BIT - 1 : 0] rob_wb_idx2,     // rob write back index
-    input wire [               31 : 0] rob_wb_val2      // rob write back value
+    input wire                         alu_wb_valid,    // alu write back valid
+    input wire [`ROB_SIZE_BIT - 1 : 0] alu_wb_idx,      // alu write back rob_index
+    input wire [               31 : 0] alu_wb_value,    // alu write back value
+    input wire                         lsb_wb_valid,    // lsb write back valid
+    input wire [`ROB_SIZE_BIT - 1 : 0] lsb_wb_idx,      // lsb write back rob_index
+    input wire [               31 : 0] lsb_wb_value     // lsb write back value
 );
     // Reservation Station Data
     reg                          busy     [0 : `RS_SIZE - 1];
@@ -99,6 +99,7 @@ module ReservationStation (
     wire next_size = executable && !inst_valid ? size - 1 : (!executable && inst_valid ? size + 1 : size);
     wire next_full = next_size == `RS_SIZE;
 
+    integer i;
     always @(posedge clk_in or posedge rst_in) begin
         if (rst_in || rob_clear) begin
             size <= 0;
@@ -127,14 +128,14 @@ module ReservationStation (
                 busy[insert_pos] <= 1;
                 optype[insert_pos] <= inst_type;
                 rob_idx[insert_pos] <= inst_rob_idx;
-                r1[insert_pos] <= !inst_has_dep1 ? inst_r1 : (rob_wb_valid1 && inst_dep1 == rob_wb_idx1 ? rob_wb_val1 : 
-                                  (rob_wb_valid2 && inst_dep1 == rob_wb_idx2 ? rob_wb_val2 : 32'b0));
-                r2[insert_pos] <= !inst_has_dep2 ? inst_r2 : (rob_wb_valid1 && inst_dep2 == rob_wb_idx1 ? rob_wb_val1 : 
-                                  (rob_wb_valid2 && inst_dep2 == rob_wb_idx2 ? rob_wb_val2 : 32'b0));
+                r1[insert_pos] <= !inst_has_dep1 ? inst_r1 : (alu_wb_valid && inst_dep1 == alu_wb_idx ? alu_wb_value : 
+                                  (lsb_wb_valid && inst_dep1 == lsb_wb_idx ? lsb_wb_value : 32'b0));
+                r2[insert_pos] <= !inst_has_dep2 ? inst_r2 : (alu_wb_valid && inst_dep2 == alu_wb_idx ? alu_wb_value : 
+                                  (lsb_wb_valid && inst_dep2 == lsb_wb_idx ? lsb_wb_value : 32'b0));
                 dep1[insert_pos] <= inst_dep1;
                 dep2[insert_pos] <= inst_dep2;
-                has_dep1[insert_pos] <= inst_has_dep1 && !(rob_wb_valid1 && inst_dep1 == rob_wb_idx1) && !(rob_wb_valid2 && inst_dep1 == rob_wb_idx2);
-                has_dep2[insert_pos] <= inst_has_dep2 && !(rob_wb_valid1 && inst_dep2 == rob_wb_idx1) && !(rob_wb_valid2 && inst_dep2 == rob_wb_idx2);
+                has_dep1[insert_pos] <= inst_has_dep1 && !(alu_wb_valid && inst_dep1 == alu_wb_idx) && !(lsb_wb_valid && inst_dep1 == lsb_wb_idx);
+                has_dep2[insert_pos] <= inst_has_dep2 && !(alu_wb_valid && inst_dep2 == alu_wb_idx) && !(lsb_wb_valid && inst_dep2 == lsb_wb_idx);
             end
 
             // remove exe busy
@@ -145,23 +146,23 @@ module ReservationStation (
             // update dep
             for (i = 0; i < `RS_SIZE; i = i + 1) begin 
                 if (busy[i]) begin
-                    if (rob_wb_valid1) begin
-                        if (has_dep1[i] && (rob_wb_valid1 && dep1[i] == rob_wb_idx1)) begin
-                            r1[i] <= rob_wb_val1;
+                    if (alu_wb_valid) begin
+                        if (has_dep1[i] && (alu_wb_valid && dep1[i] == alu_wb_idx)) begin
+                            r1[i] <= alu_wb_value;
                             has_dep1[i] <= 0;
                         end
-                        if (has_dep2[i] && (rob_wb_valid1 && dep2[i] == rob_wb_idx1)) begin
-                            r2[i] <= rob_wb_val1;
+                        if (has_dep2[i] && (alu_wb_valid && dep2[i] == alu_wb_idx)) begin
+                            r2[i] <= alu_wb_value;
                             has_dep2[i] <= 0;
                         end
                     end
-                    if (rob_wb_valid2) begin
-                        if (has_dep1[i] && (rob_wb_valid2 && dep1[i] == rob_wb_idx2)) begin
-                            r1[i] <= rob_wb_val2;
+                    if (lsb_wb_valid) begin
+                        if (has_dep1[i] && (lsb_wb_valid && dep1[i] == lsb_wb_idx)) begin
+                            r1[i] <= lsb_wb_value;
                             has_dep1[i] <= 0;
                         end
-                        if (has_dep2[i] && (rob_wb_valid2 && dep2[i] == rob_wb_idx2)) begin
-                            r2[i] <= rob_wb_val2;
+                        if (has_dep2[i] && (lsb_wb_valid && dep2[i] == lsb_wb_idx)) begin
+                            r2[i] <= lsb_wb_value;
                             has_dep2[i] <= 0;
                         end
                     end

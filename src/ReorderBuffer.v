@@ -11,9 +11,9 @@ module ReorderBuffer (
     input  wire [`ROB_TYPE_BIT - 1 : 0] inst_type,  // ROB work type
     input  wire [               31 : 0] inst_value, // data value (RG) | jump address (BR)
     input  wire [                4 : 0] inst_rd,    // destination register 
-
+    output wire                         full,
     input  wire [               31 : 0] inst_addr,  // instruction address (debug)
-
+    
 
     /// to Decoder (Issue)
     input  wire [`ROB_SIZE_BIT - 1 : 0] query_rob_idx1,
@@ -33,8 +33,9 @@ module ReorderBuffer (
     input  wire [`ROB_SIZE_BIT - 1 : 0] lsb_rob_idx,
     input  wire [               31 : 0] lsb_value,
 
-    output wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_head,
-    output wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_tail,
+    output wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_head, // to LSB
+    input  wire                         lsb_st_ok,    // from LSB
+    output wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_tail, // to Decoder
 
     /// to RegisterFile
     output wire [                4 : 0] rob_set_idx,
@@ -60,7 +61,7 @@ module ReorderBuffer (
     // for debug
     reg [               31 : 0] iaddr [0 : ROB_SIZE - 1]; // instruction address
 
-    reg [`ROB_SIZE_BIT - 1 : 0] head, tail;
+    reg [`ROB_SIZE_BIT - 1 : 0] head, tail; // [head, tail)
 
     assign rob_idx_head = head;
     assign rob_idx_tail = tail;
@@ -70,6 +71,9 @@ module ReorderBuffer (
     assign rob_set_idx = commit_reg_flag ? rd[head] : 0;
     assign rob_set_reg_val = commit_reg_flag ? value[head] : 0;
     assign rob_set_recorder = commit_reg_flag ? head : 0;
+
+    assign can_commit = busy[head] && ready[head] && (type[head] != TypeST || lsb_st_ok);
+    assign full = (head == tail && busy[head]);
 
     // to Decoder query
     assign query_ready1 = ready[query_rob_idx1] || (alu_valid && alu_rob_idx == query_rob_idx1) 
@@ -117,7 +121,7 @@ module ReorderBuffer (
                 value[lsb_rob_idx] <= lsb_value;
             end
             // commit
-            if (busy[head] && ready[head]) begin
+            if (commit) begin
                 head <= head + 1;
                 busy[head] <= 0;
                 ready[head] <= 0;
