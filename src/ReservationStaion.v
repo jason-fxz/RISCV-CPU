@@ -62,7 +62,7 @@ module ReservationStation (
 
     // get free_pos / exe_pos
     generate
-        genvar i;
+        // genvar i;
         wire exe_flag [1 : 2 * `RS_SIZE - 1];
         wire [`RS_SIZE_BIT - 1 : 0] exe_idx[1 : 2 * `RS_SIZE - 1];
         wire free_flag [1 : 2 * `RS_SIZE - 1];
@@ -99,8 +99,8 @@ module ReservationStation (
     wire next_size = executable && !inst_valid ? size - 1 : (!executable && inst_valid ? size + 1 : size);
     wire next_full = next_size == `RS_SIZE;
 
-    integer i;
-    always @(posedge clk_in or posedge rst_in) begin
+    always @(posedge clk_in or posedge rst_in) begin : Main
+        integer i;
         if (rst_in || rob_clear) begin
             size <= 0;
             full <= 0;

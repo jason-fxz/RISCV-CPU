@@ -90,8 +90,8 @@ module LoadStoreBuffer (
 
     assign rob_st_ok = mem_ready;
 
-    integer i;
-    always @(posedge clk_in) begin
+    always @(posedge clk_in) begin : Main
+        integer i;
         if (rst_in || rob_clear) begin
             size <= 0;
             full <= 0;

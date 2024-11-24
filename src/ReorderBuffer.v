@@ -3,7 +3,7 @@
 module ReorderBuffer (
     input wire clk_in,        // system clock signal
     input wire rst_in,        // reset signal
-    input wire rdy_in         // ready signal, pause cpu when low
+    input wire rdy_in,         // ready signal, pause cpu when low
 
     /// from Decoder (Issue)
     input  wire                         inst_valid,
@@ -45,7 +45,7 @@ module ReorderBuffer (
 
     /// for branch predict failed
     output reg          clear, // rob clear
-    output reg [31 : 0] next_pc,
+    output reg [31 : 0] next_pc
 
 );
     localparam ROB_SIZE = `ROB_SIZE;
@@ -90,8 +90,8 @@ module ReorderBuffer (
     integer i;
     always @(posedge clk_in) begin
         if (rst_in || (clear && rdy_in)) begin
-            clear <= 0
-            next_pc <= 0
+            clear <= 0;
+            next_pc <= 0;
             head <= 0;
             tail <= 0;
             for (i = 0; i < ROB_SIZE; i = i + 1) begin

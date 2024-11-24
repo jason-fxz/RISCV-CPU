@@ -60,7 +60,7 @@ module MemUnit(
         if (rst_in || rob_clear) begin
             state <= 0;
             cur_addr <= 0;
-            cur_data <= 0;
+            cur_len <= 0;
             cur_wr <= 0;
             cur_data_in <= 0;
             cur_data_to_write <= 0;
@@ -129,9 +129,9 @@ module MemUnit(
         input [31:0] tmp_data;
         input [7:0] mem_din;
         case (len)
-            3'b000: gen_read_data = {24{mem_din[7]}, mem_din}; // lb
+            3'b000: gen_read_data = {{24{mem_din[7]}}, mem_din}; // lb
             3'b100: gen_read_data = {24'b0, mem_din}; // lbu
-            3'b001: gen_read_data = {16{mem_din[7]}, mem_din, tmp_data[7:0]}; // lh
+            3'b001: gen_read_data = {{16{mem_din[7]}}, mem_din, tmp_data[7:0]}; // lh
             3'b101: gen_read_data = {16'b0, mem_din, tmp_data[7:0]}; // lhu
             3'b010: gen_read_data = {mem_din, tmp_data[23:0]}; // lw
             default: gen_read_data = 0;

@@ -6,12 +6,12 @@ module Decoder(
     input wire rdy_in,        // ready signal, pause cpu when low
 
     // from fetcher
-    input wire          inst_valid,
-    input wire [31 : 0] inst_addr,
-    input wire [31 : 0] inst_data,
+    input wire                           inst_valid,
+    input wire [                 31 : 0] inst_addr,
+    input wire [                 31 : 0] inst_data,
     // to fetcher
-    output wire         f_next_pc,
-    output wire         f_ok,
+    output wire [                31 : 0] f_next_pc,
+    output wire                          f_ok,
 
     /// to RegisterFile
     output wire [                 4 : 0] rf_get_idx1,
@@ -24,7 +24,7 @@ module Decoder(
     input  wire [ `ROB_SIZE_BIT - 1 : 0] rf_get_dep2,
 
     output wire [                 4 : 0] rf_set_idx,
-    output wire [                31 : 0] rf_set_dep,
+    output wire [ `ROB_SIZE_BIT - 1 : 0] rf_set_dep,
 
     /// query ROB for dependency
     output wire  [`ROB_SIZE_BIT - 1 : 0] query_rob_idx1,
@@ -37,7 +37,7 @@ module Decoder(
     /// to ReorderBuffer
     input  wire [ `ROB_SIZE_BIT - 1 : 0] rob_idx_tail,
     input  wire                          rob_full,
-    input  wire                          rob_empty,
+    // input  wire                          rob_empty,
     output reg                           rob_inst_valid,
     output reg                           rob_inst_ready, // data ready
     output reg  [ `ROB_TYPE_BIT - 1 : 0] rob_inst_type,  // ROB work type

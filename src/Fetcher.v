@@ -45,7 +45,7 @@ module Fetcher(
 
     always @(posedge clk_in) begin
         if (rst_in) begin
-            pc <= 0;
+            PC <= 0;
             enable_fetch <= 1;
             tmp_inst_addr <= 0;
             tmp_inst_result <= 0;

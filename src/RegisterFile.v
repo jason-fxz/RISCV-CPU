@@ -25,7 +25,7 @@ module RegisterFile(
     output wire [`ROB_SIZE_BIT - 1 : 0] get_recorder2,
     // Set register recorder
     input  wire [                4 : 0] set_reg_recorder_idx,
-    input  wire [               31 : 0] set_reg_recorder_val
+    input  wire [`ROB_SIZE_BIT - 1 : 0] set_reg_recorder_val
 
 );
     reg [              31 : 0] regs    [0 : 31];

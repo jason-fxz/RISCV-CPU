@@ -22,7 +22,7 @@ ifndef name
 endif
 
 build_sim: $(SIM_DIR)/testbench.v $(V_SOURCES)
-	@iverilog -o $(TESTSPACE_DIR)/test $(SIM_DIR)/testbench.v $(V_SOURCES)
+	@iverilog -I src/ -o $(TESTSPACE_DIR)/test $(SIM_DIR)/testbench.v $(V_SOURCES)
 
 build_sim_test: testcases _no_testcase_name_check
 	@cp $(SIM_TESTCASE_DIR)/*$(name)*.c $(TESTSPACE_DIR)/test.c
