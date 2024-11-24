@@ -29,7 +29,9 @@ module MemUnit(
     input  wire [ 2:0]          len,
     input  wire [31:0]          data_in, // data to write
     output wire [31:0]          data_out, // data read
-    output wire                 ready
+    output wire                 ready,
+
+    input  wire                 rob_clear
 );
     reg           cur_wr;
     reg    [31:0] cur_addr;
@@ -55,7 +57,7 @@ module MemUnit(
 
 
     always @(posedge clk_in) begin
-        if (rst_in) begin
+        if (rst_in || rob_clear) begin
             state <= 0;
             cur_addr <= 0;
             cur_data <= 0;
@@ -66,7 +68,7 @@ module MemUnit(
             // ready <= 0;
         end
         else if (rdy_in) begin
-            ready <= 0;
+            // ready <= 0;
             case (state)
                 2'b00: begin
                     if (need_work) begin
