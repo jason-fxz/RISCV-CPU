@@ -34,6 +34,7 @@ module ReorderBuffer (
     input  wire [               31 : 0] lsb_value,
 
     output wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_head, // to LSB
+    output wire                         rob_head_valid, // to LSB
     input  wire                         lsb_st_ok,    // from LSB
     output wire [`ROB_SIZE_BIT - 1 : 0] rob_idx_tail, // to Decoder
 
@@ -65,6 +66,7 @@ module ReorderBuffer (
 
     assign rob_idx_head = head;
     assign rob_idx_tail = tail;
+    assign rob_head_valid = busy[head];
 
     // commit
     assign commit_reg_flag = rdy_in && busy[head] && ready[head] && (type[head] == TypeRG);
@@ -121,7 +123,7 @@ module ReorderBuffer (
                 value[lsb_rob_idx] <= lsb_value;
             end
             // commit
-            if (commit) begin
+            if (can_commit) begin
                 head <= head + 1;
                 busy[head] <= 0;
                 ready[head] <= 0;

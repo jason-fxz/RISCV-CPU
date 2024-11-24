@@ -23,6 +23,7 @@ module LoadStoreBuffer (
     /// from ROB check Store commit
     input wire                         rob_head_valid,
     input wire [`ROB_SIZE_BIT - 1 : 0] rob_head_id,
+    output wire                        rob_st_ok,
     
 
     /// From Write Back to Update
@@ -87,6 +88,7 @@ module LoadStoreBuffer (
     assign mem_addr = r1[head] + {{20{offset[head][11]}}, offset[head]};
     assign mem_value = r2[head];
 
+    assign rob_st_ok = mem_ready;
 
     integer i;
     always @(posedge clk_in) begin
