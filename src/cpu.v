@@ -232,9 +232,9 @@ module cpu(
     );
 
     ReorderBuffer reorder_buffer (
-        .clk_in(clk),
-        .rst_in(rst),
-        .rdy_in(rdy),
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
 
         // from Decoder (Issue)
         .inst_valid(rob_inst_valid),
@@ -294,9 +294,9 @@ module cpu(
 
     
     ReservationStation reservation_station (
-        .clk_in(clk),
-        .rst_in(rst),
-        .rdy_in(rdy),
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
 
         .rob_clear(rob_clear),
 
@@ -335,9 +335,9 @@ module cpu(
     wire [`ROB_SIZE_BIT - 1:0]  rs_alu_rob_idx;
 
     LoadStoreBuffer load_store_buffer (
-        .clk_in(clk),
-        .rst_in(rst),
-        .rdy_in(rdy),
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
 
         .rob_clear(rob_clear),
 
@@ -378,9 +378,9 @@ module cpu(
     );
 
     ALU alu (
-        .clk_in(clk),
-        .rst_in(rst),
-        .rdy_in(rdy),
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
 
         // from reservation station
         .valid(rs_alu_valid),

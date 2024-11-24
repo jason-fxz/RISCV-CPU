@@ -30,8 +30,8 @@ module Fetcher(
     reg [31 : 0] tmp_inst_result;
     reg          tmp_inst_valid;
 
-    assign mem_valid = enable_fetch;
-    assign mem_addr = PC;
+    assign mem_valid = dc_ok ? 1 : mem_ready ? 0 : enable_fetch;
+    assign mem_addr = dc_ok ? next_pc : PC;
 
 
 

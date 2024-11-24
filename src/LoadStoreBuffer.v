@@ -68,25 +68,27 @@ module LoadStoreBuffer (
     
     generate
         genvar i;
-        for (i = 0; i < `RS_SIZE; i = i + 1) begin
+        for (i = 0; i < LSB_SIZE; i = i + 1) begin
             assign ready[i] = busy[i] && (!has_dep1[i] && !has_dep2[i]);
         end
     endgenerate
 
     wire pop_head = mem_ready;
-    wire next_size = pop_head && !inst_valid ? size - 1 : (!pop_head && inst_valid ? size + 1 : size);
-    wire next_full = next_size == `RS_SIZE;
+    wire [`LSB_SIZE_BIT : 0] next_size = pop_head && !inst_valid ? size - 1 : (!pop_head && inst_valid ? size + 1 : size);
+    wire next_full = next_size == LSB_SIZE;
 
     assign lsb_wb_valid = mem_ready && busy[head] && type[head][3] == 1'b0;
     assign lsb_wb_idx = rob_idx[head];
     assign lsb_wb_value = mem_result;
 
     // load can be easily valid / store should be valid when rob commit
-    assign mem_valid = busy[head] && (type[head][3] != 1 || rob_head_valid && rob_head_id == rob_idx[head]);
-    assign mem_wr = type[head][3];
-    assign mem_len = type[head][2:0];
-    assign mem_addr = r1[head] + {{20{offset[head][11]}}, offset[head]};
-    assign mem_value = r2[head];
+    wire [`LSB_SIZE_BIT - 1 : 0] head_k = mem_ready ? head + 1 : head;
+    
+    assign mem_valid = busy[head_k] && (type[head_k][3] != 1 || rob_head_valid && rob_head_id == rob_idx[head_k]);
+    assign mem_wr = type[head_k][3];
+    assign mem_len = type[head_k][2:0];
+    assign mem_addr = r1[head_k] + {{20{offset[head_k][11]}}, offset[head_k]};
+    assign mem_value = r2[head_k];
 
     assign rob_st_ok = mem_ready;
 
@@ -97,7 +99,7 @@ module LoadStoreBuffer (
             full <= 0;
             head <= 0;
             tail <= 0;
-            for (i = 0; i < `RS_SIZE; i = i + 1) begin
+            for (i = 0; i < LSB_SIZE; i = i + 1) begin
                 busy[i] <= 0;
                 rob_idx[i] <= 0;
                 type[i] <= 0;
@@ -107,9 +109,10 @@ module LoadStoreBuffer (
                 dep2[i] <= 0;
                 has_dep1[i] <= 0;
                 has_dep2[i] <= 0;
+                offset[i] <= 0;
             end
         end
-        if (!rdy_in) begin
+        else if (!rdy_in) begin
             // do nothing
         end
         else begin

@@ -116,7 +116,7 @@ module ReservationStation (
                 has_dep2[i] <= 0;
             end
         end
-        if (!rdy_in) begin
+        else if (!rdy_in) begin
             // do nothing
         end
         else begin

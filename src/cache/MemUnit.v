@@ -29,7 +29,7 @@ module MemUnit(
     input  wire [ 2:0]          len,
     input  wire [31:0]          data_in, // data to write
     output wire [31:0]          data_out, // data read
-    output wire                 ready,
+    output reg                  ready,
 
     input  wire                 rob_clear
 );
@@ -47,8 +47,8 @@ module MemUnit(
     reg    [1:0]  state;
 
     wire   need_work = valid;
-    wire   totalbyte = len[1] ? 4 : len[0] ? 2 : 1;
-    assign ready = valid && (totalbyte - 1 == state);
+    wire   [2:0] totalbyte = len[1] ? 3'd4 : len[0] ? 3'd2 : 3'd1;
+    assign next_ready = valid && (totalbyte - 1 == state);
 
     wire   direct = (state == 2'b00) && need_work;
     assign mem_a = direct ? addr : cur_addr;
@@ -65,10 +65,10 @@ module MemUnit(
             cur_data_in <= 0;
             cur_data_to_write <= 0;
             tmp_data <= 0;
-            // ready <= 0;
+            ready <= 0;
         end
         else if (rdy_in) begin
-            // ready <= 0;
+            ready <= next_ready;
             case (state)
                 2'b00: begin
                     if (need_work) begin

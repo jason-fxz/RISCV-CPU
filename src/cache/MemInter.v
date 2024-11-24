@@ -40,7 +40,10 @@ module MemInter(
     wire [31:0] mu_result;
     wire        mu_ready;
 
+    reg   [1:0] state; // 00: idle, 01: inst, 10: data
+    localparam IDLE = 2'b00, INST = 2'b01, DATA = 2'b10;
 
+    // assign idle = 
 
     MemUnit memUnit (
         .clk_in(clk_in),
@@ -64,16 +67,49 @@ module MemInter(
 
     // choose data first
     assign mu_valid = inst_valid || data_valid;
-    assign mu_wr = !mu_valid ? 0 : (data_valid ? data_wr : 0);
-    assign mu_addr = !mu_valid ? 0 : (data_valid ? data_addr : inst_addr);
-    assign mu_len = !mu_valid ? 3'b111 : (data_valid ? data_len : 3'b010);
-    assign mu_value = !mu_valid ? 0 : (data_valid ? data_value : 0);
+
+    assign mu_wr = (state == IDLE || mu_ready) ? data_valid : state == DATA;
+    assign mu_addr = (state == IDLE || mu_ready) ? (data_valid ? data_addr : inst_addr) : (state == DATA ? data_addr : inst_addr);
+    assign mu_len = (state == IDLE || mu_ready) ? (data_valid ? data_len : 3'b010) : (state == DATA ? data_len : 3'b010);
+    assign mu_value = data_value;
+
+    // assign mu_addr = !mu_valid ? 0 : (data_valid ? data_addr : inst_addr);
+    // assign mu_len = !mu_valid ? 3'b111 : (data_valid ? data_len : 3'b010);
+    // assign mu_value = !mu_valid ? 0 : (data_valid ? data_value : 0);
 
 
-    assign data_result = data_valid ? mu_result : 0;
-    assign data_ready = data_valid ? mu_ready : 0;
+    assign data_result = state == DATA ? mu_result : 0;
+    assign data_ready = mu_ready && state == DATA;
 
-    assign inst_result = choose_inst ? mu_result : 0;
-    assign inst_ready = choose_inst ? mu_ready : 0;
+    assign inst_result = state == INST ? mu_result : 0;
+    assign inst_ready = mu_ready && state == INST;
+
+    always @(posedge clk_in) begin
+        if (rst_in || rob_clear) begin
+            state <= 2'b00;
+        end
+        else if (rdy_in) begin
+            case(state)
+                IDLE: begin
+                    if (data_valid) begin
+                        state <= DATA;
+                    end
+                    else if (inst_valid) begin
+                        state <= INST;
+                    end
+                end
+                INST: begin
+                    if (mu_ready) begin
+                        state <= data_valid ? DATA : inst_valid ? INST : IDLE;
+                    end
+                end
+                DATA: begin
+                    if (mu_ready) begin
+                        state <= data_valid ? DATA : inst_valid ? INST : IDLE;
+                    end
+                end
+            endcase
+        end
+    end
 
 endmodule

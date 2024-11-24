@@ -14,7 +14,7 @@ V_SOURCES := $(shell find $(SRC_DIR) -name '*.v')
 all: testcases build_sim
 
 testcases:
-	@make -C $(TESTCASE_DIR)
+	# @make -C $(TESTCASE_DIR)
 
 _no_testcase_name_check:
 ifndef name
