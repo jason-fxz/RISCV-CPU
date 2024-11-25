@@ -250,6 +250,7 @@ always @*
               d_wr_en   = 1'b1;
             end
             $write("%c", io_din);
+            // $display("IO:out:[%h]%c, %0t",io_din, io_din, $time);
           end
           3'h4: begin      // 0x30004 write: indicates program stop
             if (!tx_full) begin
@@ -258,8 +259,12 @@ always @*
             end
             d_state = S_DECODE; 
             d_program_finish = 1'b1;
+          `ifndef ONLINE_JUDGE
             $display("IO:Return");
-            $finish;
+          `endif
+            // $display("Current Time: %0t", $time);
+            // #4;
+            $finish(0);
           end
         endcase
       end else begin
