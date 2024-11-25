@@ -173,6 +173,8 @@ module cpu(
         .rst_in(rst_in),
         .rdy_in(rdy_in),
 
+        .rob_clear(rob_clear),
+
         .inst_valid(fetcher_inst_valid),
         .inst_addr(fetcher_inst_addr),
         .inst_data(fetcher_inst_result),

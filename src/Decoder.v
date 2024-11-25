@@ -5,6 +5,8 @@ module Decoder(
     input wire rst_in,        // reset signal
     input wire rdy_in,        // ready signal, pause cpu when low
 
+    input wire rob_clear,
+
     // from fetcher
     input wire                           inst_valid,
     input wire [                 31 : 0] inst_addr,
@@ -139,7 +141,7 @@ module Decoder(
 
 
     always @(posedge clk_in) begin
-        if (rst_in) begin
+        if (rst_in || rob_clear) begin
             rs_inst_valid <= 0;
             rs_inst_type <= 0;
             
