@@ -48,7 +48,7 @@ module MemUnit(
 
     wire   need_work = valid;
     wire   [2:0] totalbyte = len[1] ? 3'd4 : len[0] ? 3'd2 : 3'd1;
-    assign next_ready = valid && (totalbyte - 1 == state);
+    wire   next_ready = valid && (totalbyte - 1 == state);
 
     wire   direct = (state == 2'b00) && need_work;
     assign mem_a = direct ? addr : cur_addr;
@@ -57,7 +57,17 @@ module MemUnit(
 
 
     always @(posedge clk_in) begin
-        if (rst_in || rob_clear) begin
+        if (rst_in) begin
+            state <= 0;
+            cur_addr <= 0;
+            cur_len <= 0;
+            cur_wr <= 0;
+            cur_data_in <= 0;
+            cur_data_to_write <= 0;
+            tmp_data <= 0;
+            ready <= 0;
+        end
+        else if (rob_clear) begin
             state <= 0;
             cur_addr <= 0;
             cur_len <= 0;

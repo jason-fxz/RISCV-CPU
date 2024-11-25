@@ -60,7 +60,8 @@ module MemInter(
         .len(mu_len),
         .data_in(mu_value),
         .data_out(mu_result),
-        .ready(mu_ready)
+        .ready(mu_ready),
+        .rob_clear(rob_clear)
     );
 
     wire  choose_inst = inst_valid && !data_valid;
@@ -68,7 +69,7 @@ module MemInter(
     // choose data first
     assign mu_valid = inst_valid || data_valid;
 
-    assign mu_wr = (state == IDLE || mu_ready) ? data_valid : state == DATA;
+    assign mu_wr = (state == IDLE || mu_ready) ? data_valid && data_wr : state == DATA && data_wr;
     assign mu_addr = (state == IDLE || mu_ready) ? (data_valid ? data_addr : inst_addr) : (state == DATA ? data_addr : inst_addr);
     assign mu_len = (state == IDLE || mu_ready) ? (data_valid ? data_len : 3'b010) : (state == DATA ? data_len : 3'b010);
     assign mu_value = data_value;
@@ -85,8 +86,11 @@ module MemInter(
     assign inst_ready = mu_ready && state == INST;
 
     always @(posedge clk_in) begin
-        if (rst_in || rob_clear) begin
-            state <= 2'b00;
+        if (rst_in) begin
+            state <= IDLE;
+        end
+        else if (rob_clear) begin
+            state <= data_valid ? DATA : inst_valid ? INST : IDLE;
         end
         else if (rdy_in) begin
             case(state)
