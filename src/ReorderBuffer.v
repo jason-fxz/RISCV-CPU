@@ -64,6 +64,8 @@ module ReorderBuffer (
 
     reg [`ROB_SIZE_BIT - 1 : 0] head, tail; // [head, tail)
 
+    reg [31 : 0] commit_cnt; // commit counter (debug)
+
     assign rob_idx_head = head;
     assign rob_idx_tail = tail;
     assign rob_head_valid = busy[head];
@@ -90,6 +92,7 @@ module ReorderBuffer (
     integer i;
     always @(posedge clk_in) begin
         if (rst_in || (clear && rdy_in)) begin
+            if (rst_in) commit_cnt <= 1;
             clear <= 0;
             next_pc <= 0;
             head <= 0;
@@ -124,6 +127,7 @@ module ReorderBuffer (
             end
             // commit
             if (can_commit) begin
+                commit_cnt <= commit_cnt + 1;
                 head <= head + 1;
                 busy[head] <= 0;
                 ready[head] <= 0;
