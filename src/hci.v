@@ -145,6 +145,11 @@ wire [31:0] d_cpu_cycle_cnt;
 assign d_cpu_cycle_cnt = active ? q_cpu_cycle_cnt : q_cpu_cycle_cnt + 1'b1;
 reg d_program_finish;
 
+// SIM OUTPUT
+reg  [7:0] sim_out;
+reg        sim_out_en;
+
+
 // Update FF state.
 always @(posedge clk)
   begin
@@ -179,6 +184,15 @@ always @(posedge clk)
         q_cpu_cycle_cnt    <= d_cpu_cycle_cnt;
         q_io_dout          <= d_io_dout;
         program_finish     <= d_program_finish;
+        if (d_program_finish) begin
+          `ifndef ONLINE_JUDGE
+            $display("IO:Return");
+          `endif
+            $finish(0);
+        end
+        if (sim_out_en) begin
+          $write("%c", sim_out);
+        end
       end
   end
 
@@ -201,6 +215,25 @@ uart #(.SYS_CLK_FREQ(SYS_CLK_FREQ),
   .tx_full(tx_full),
   .parity_err(parity_err)
 );
+
+// always @(program_finish)
+//   begin
+//     if (program_finish) begin
+//     `ifndef ONLINE_JUDGE
+//       $display("IO:Return");
+//     `endif
+//       $finish(0);
+//     end
+//   end
+
+// always @(q_wr_en)
+//   begin
+//     if (q_wr_en && q_tx_data != 8'h00)
+//       begin
+//         // $display("IO:out:[%h]%c, %0t",q_tx_data, q_tx_data, $time);
+//         $write("%c", q_tx_data);
+//       end
+//   end
 
 always @*
   begin
@@ -230,6 +263,9 @@ always @*
     d_tx_data     = 8'h00;
     d_wr_en       = 1'b0;
 
+    sim_out    = 8'h00;
+    sim_out_en = 1'b0;
+
     // Setup default output regs.
     ram_wr    = 1'b0;
     io_in_rd_en = 1'b0;
@@ -249,8 +285,10 @@ always @*
               d_tx_data = io_din;
               d_wr_en   = 1'b1;
             end
-            $write("%c", io_din);
-            // $display("IO:out:[%h]%c, %0t",io_din, io_din, $time);
+            sim_out = io_din;
+            sim_out_en = 1'b1;
+              // $write("%c", io_din);
+              // $display("IO:out:[%h]%c, %0t tx_full = %b",io_din, io_din, $time, tx_full);
           end
           3'h4: begin      // 0x30004 write: indicates program stop
             if (!tx_full) begin
@@ -259,12 +297,10 @@ always @*
             end
             d_state = S_DECODE; 
             d_program_finish = 1'b1;
-          `ifndef ONLINE_JUDGE
-            $display("IO:Return");
-          `endif
-            // $display("Current Time: %0t", $time);
-            // #4;
-            $finish(0);
+          // `ifndef ONLINE_JUDGE
+          //   $display("IO:Return");
+          // `endif
+          //   $finish(0);
           end
         endcase
       end else begin
