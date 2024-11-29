@@ -88,7 +88,7 @@ module ReorderBuffer (
     assign can_commit = busy[head] && ready[head] && (type[head] != TypeST || lsb_st_ok);
     // assign full = (head == tail && busy[head]) || (tail + 1 == head && inst_valid && !ready[head]);
     assign next_size = can_commit && !inst_valid ? size - 1 : !can_commit && inst_valid ? size + 1 : size;
-    assign full = size >= 1;
+    assign full = next_size >= ROB_SIZE;
 
     // to Decoder query
     assign query_ready1 = ready[query_rob_idx1] || (alu_valid && alu_rob_idx == query_rob_idx1) 
@@ -100,12 +100,10 @@ module ReorderBuffer (
 
     assign query_ready2 = ready[query_rob_idx2] || (alu_valid && alu_rob_idx == query_rob_idx2) 
                         || (lsb_valid && lsb_rob_idx == query_rob_idx2) || (inst_valid && tail == query_rob_idx2 && inst_ready);
-
     assign query_value2 = ready[query_rob_idx2] ? value[query_rob_idx2] : 
                         (alu_valid && alu_rob_idx == query_rob_idx2) ? alu_value :
                         (lsb_valid && lsb_rob_idx == query_rob_idx2) ? lsb_value :
                         (inst_valid && tail == query_rob_idx2 && inst_ready) ? inst_value : 0;
-
 
     integer i;
     always @(posedge clk_in) begin

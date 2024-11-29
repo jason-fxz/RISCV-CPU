@@ -164,6 +164,7 @@ module Decoder(
             rob_inst_value <= 0;
             rob_inst_rd <= 0;
             rob_inst_addr <= 0;
+            rf_set_idx <= 0;
         end
         else if (!rdy_in) begin
             // do nothing
