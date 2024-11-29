@@ -21,3 +21,5 @@
 `define ROB_ST 2'b01 // store to mem
 `define ROB_BR 2'b10 // branch (predict 0)
 `define ROB_BR1 2'b11 // branch (predict 1) 
+
+`define ICACHE_SIZE_BIT 5

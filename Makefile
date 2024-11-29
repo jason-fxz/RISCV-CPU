@@ -24,9 +24,9 @@ all: testcases build_sim
 endif
 
 testcases:
-	cd $(TESTCASE_DIR)
+	# cd $(TESTCASE_DIR)
 	docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
-	cd $(PWD)
+	# cd $(PWD)
 
 _no_testcase_name_check:
 ifndef name
@@ -53,8 +53,8 @@ build_fpga_test: testcases _no_testcase_name_check
 	@find $(FPGA_TESTCASE_DIR) -name '*$(name)*.ans' -exec cp {} $(TESTSPACE_DIR)/test.ans \;
 
 run_sim: build_sim build_sim_test
-	cd $(TESTSPACE_DIR) && ./test
-	# cd $(TESTSPACE_DIR) && ./test | tee test.out.raw && bash ./judge.sh
+	# cd $(TESTSPACE_DIR) && ./test
+	cd $(TESTSPACE_DIR) && time -p stdbuf -o0 ./test | tee test.out.raw && bash ./judge.sh
 
 fpga_device := /dev/ttyUSB1
 fpga_run_mode := -I # or -T

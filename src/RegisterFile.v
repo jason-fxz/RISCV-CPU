@@ -32,12 +32,12 @@ module RegisterFile(
     reg [`ROB_SIZE_BIT - 1: 0] recorder[0 : 31];
     reg                        has_dep [0 : 31];
 
-    assign get_has_dep1 = has_dep[get_idx1];
-    assign get_has_dep2 = has_dep[get_idx2];
+    assign get_has_dep1 = has_dep[get_idx1] || (set_reg_recorder_idx && set_reg_recorder_idx == get_idx1);
+    assign get_has_dep2 = has_dep[get_idx2] || (set_reg_recorder_idx && set_reg_recorder_idx == get_idx2);
     assign get_reg_val1 = regs[get_idx1];
     assign get_reg_val2 = regs[get_idx2];
-    assign get_recorder1 = recorder[get_idx1];
-    assign get_recorder2 = recorder[get_idx2];
+    assign get_recorder1 = (set_reg_recorder_idx && set_reg_recorder_idx == get_idx1) ? set_reg_recorder_val : recorder[get_idx1];
+    assign get_recorder2 = (set_reg_recorder_idx && set_reg_recorder_idx == get_idx2) ? set_reg_recorder_val : recorder[get_idx2];
 
     integer i;
     always @(posedge clk_in) begin
@@ -74,38 +74,38 @@ module RegisterFile(
     end
 
     // for debug
-    wire [31 : 0] reg_zero = regs[0];
-    wire [31 : 0] reg_ra = regs[1];
-    wire [31 : 0] reg_sp = regs[2];
-    wire [31 : 0] reg_gp = regs[3];
-    wire [31 : 0] reg_tp = regs[4];
-    wire [31 : 0] reg_t0 = regs[5];
-    wire [31 : 0] reg_t1 = regs[6];
-    wire [31 : 0] reg_t2 = regs[7];
-    wire [31 : 0] reg_s0 = regs[8];
-    wire [31 : 0] reg_s1 = regs[9];
-    wire [31 : 0] reg_a0 = regs[10];
-    wire [31 : 0] reg_a1 = regs[11];
-    wire [31 : 0] reg_a2 = regs[12];
-    wire [31 : 0] reg_a3 = regs[13];
-    wire [31 : 0] reg_a4 = regs[14];
-    wire [31 : 0] reg_a5 = regs[15];
-    wire [31 : 0] reg_a6 = regs[16];
-    wire [31 : 0] reg_a7 = regs[17];
-    wire [31 : 0] reg_s2 = regs[18];
-    wire [31 : 0] reg_s3 = regs[19];
-    wire [31 : 0] reg_s4 = regs[20];
-    wire [31 : 0] reg_s5 = regs[21];
-    wire [31 : 0] reg_s6 = regs[22];
-    wire [31 : 0] reg_s7 = regs[23];
-    wire [31 : 0] reg_s8 = regs[24];
-    wire [31 : 0] reg_s9 = regs[25];
-    wire [31 : 0] reg_s10 = regs[26];
-    wire [31 : 0] reg_s11 = regs[27];
-    wire [31 : 0] reg_t3 = regs[28];
-    wire [31 : 0] reg_t4 = regs[29];
-    wire [31 : 0] reg_t5 = regs[30];
-    wire [31 : 0] reg_t6 = regs[31];
+    wire [31 : 0] reg_zero = regs[0];  // 00
+    wire [31 : 0] reg_ra = regs[1];    // 01
+    wire [31 : 0] reg_sp = regs[2];    // 02
+    wire [31 : 0] reg_gp = regs[3];    // 03
+    wire [31 : 0] reg_tp = regs[4];    // 04
+    wire [31 : 0] reg_t0 = regs[5];    // 05
+    wire [31 : 0] reg_t1 = regs[6];    // 06
+    wire [31 : 0] reg_t2 = regs[7];    // 07
+    wire [31 : 0] reg_s0 = regs[8];    // 08
+    wire [31 : 0] reg_s1 = regs[9];    // 09
+    wire [31 : 0] reg_a0 = regs[10];   // 0A
+    wire [31 : 0] reg_a1 = regs[11];   // 0B
+    wire [31 : 0] reg_a2 = regs[12];   // 0C
+    wire [31 : 0] reg_a3 = regs[13];   // 0D
+    wire [31 : 0] reg_a4 = regs[14];   // 0E
+    wire [31 : 0] reg_a5 = regs[15];   // 0F
+    wire [31 : 0] reg_a6 = regs[16];   // 10
+    wire [31 : 0] reg_a7 = regs[17];   // 11
+    wire [31 : 0] reg_s2 = regs[18];   // 12
+    wire [31 : 0] reg_s3 = regs[19];   // 13
+    wire [31 : 0] reg_s4 = regs[20];   // 14
+    wire [31 : 0] reg_s5 = regs[21];   // 15
+    wire [31 : 0] reg_s6 = regs[22];   // 16
+    wire [31 : 0] reg_s7 = regs[23];   // 17
+    wire [31 : 0] reg_s8 = regs[24];   // 18
+    wire [31 : 0] reg_s9 = regs[25];   // 19
+    wire [31 : 0] reg_s10 = regs[26];  // 1A
+    wire [31 : 0] reg_s11 = regs[27];  // 1B
+    wire [31 : 0] reg_t3 = regs[28];   // 1C
+    wire [31 : 0] reg_t4 = regs[29];   // 1D
+    wire [31 : 0] reg_t5 = regs[30];   // 1E
+    wire [31 : 0] reg_t6 = regs[31];   // 1F
 
     wire [`ROB_SIZE_BIT - 1: 0] reg_zero_r = recorder[0];
     wire [`ROB_SIZE_BIT - 1: 0] reg_ra_r = recorder[1];

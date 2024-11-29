@@ -99,7 +99,7 @@ module ReservationStation (
     wire next_size = executable && !inst_valid ? size - 1 : (!executable && inst_valid ? size + 1 : size);
     wire next_full = next_size == `RS_SIZE;
 
-    always @(posedge clk_in or posedge rst_in) begin : Main
+    always @(posedge clk_in) begin : Main
         integer i;
         if (rst_in || rob_clear) begin
             size <= 0;

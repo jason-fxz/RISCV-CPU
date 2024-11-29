@@ -17,7 +17,7 @@ module ALU(
     output reg ready                                // ready signal
 );
 
-    // Funct3 Code: arith R-type / arith I-type
+    // Funct3 Code: arith R-type / arith I-type  2b'0x
     localparam ADDSUB = 5'b000; // Add: 000 000 / Sub: 000 010
     localparam AND    = 5'b111;
     localparam OR     = 5'b110;
@@ -27,7 +27,7 @@ module ALU(
     localparam SLT    = 5'b010;
     localparam SLTU   = 5'b011;
 
-    // Funct3 Code: branch B-type
+    // Funct3 Code: branch B-type 2b'10
     localparam BEQ    = 5'b000;
     localparam BNE    = 5'b001;
     localparam BLT    = 5'b100;

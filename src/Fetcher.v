@@ -55,6 +55,8 @@ module Fetcher(
             // do nothing
         end
         else if (rob_clear) begin
+            
+            // $display("clear!! %0t next_pc = %h", $time, next_pc);
             PC <= next_pc;
             enable_fetch <= 1;
             tmp_inst_addr <= 0;

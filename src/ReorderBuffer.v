@@ -63,8 +63,17 @@ module ReorderBuffer (
     reg [               31 : 0] iaddr [0 : ROB_SIZE - 1]; // instruction address
 
     reg [`ROB_SIZE_BIT - 1 : 0] head, tail; // [head, tail)
+    reg [`ROB_SIZE_BIT : 0] size;
+    wire [`ROB_SIZE_BIT : 0] next_size;
 
     reg [31 : 0] commit_cnt; // commit counter (debug)
+
+    wire [31 : 0] rob_head_addr = iaddr[head]; // debug
+    wire          rob_head_ready = ready[head]; // debug
+    wire          rob_head_value = value[head]; // debug
+    wire [4 : 0]  rob_head_rd = rd[head]; // debug
+    wire [`ROB_TYPE_BIT - 1 : 0] rob_head_type = type[head]; // debug
+
 
     assign rob_idx_head = head;
     assign rob_idx_tail = tail;
@@ -77,16 +86,25 @@ module ReorderBuffer (
     assign rob_set_recorder = commit_reg_flag ? head : 0;
 
     assign can_commit = busy[head] && ready[head] && (type[head] != TypeST || lsb_st_ok);
-    assign full = (head == tail && busy[head]);
+    // assign full = (head == tail && busy[head]) || (tail + 1 == head && inst_valid && !ready[head]);
+    assign next_size = can_commit && !inst_valid ? size - 1 : !can_commit && inst_valid ? size + 1 : size;
+    assign full = size >= 1;
 
     // to Decoder query
     assign query_ready1 = ready[query_rob_idx1] || (alu_valid && alu_rob_idx == query_rob_idx1) 
-                        || (lsb_valid && lsb_rob_idx == query_rob_idx1);
-    assign query_value1 = ready[query_rob_idx1] ? value[query_rob_idx1] : ((alu_valid && alu_rob_idx == query_rob_idx1) ? alu_value : lsb_value);
+                        || (lsb_valid && lsb_rob_idx == query_rob_idx1) || (inst_valid && tail == query_rob_idx1 && inst_ready);
+    assign query_value1 = ready[query_rob_idx1] ? value[query_rob_idx1] : 
+                        (alu_valid && alu_rob_idx == query_rob_idx1) ? alu_value :
+                        (lsb_valid && lsb_rob_idx == query_rob_idx1) ? lsb_value :
+                        (inst_valid && tail == query_rob_idx1 && inst_ready) ? inst_value : 0;
 
     assign query_ready2 = ready[query_rob_idx2] || (alu_valid && alu_rob_idx == query_rob_idx2) 
-                        || (lsb_valid && lsb_rob_idx == query_rob_idx2);
-    assign query_value2 = ready[query_rob_idx2] ? value[query_rob_idx2] : ((alu_valid && alu_rob_idx == query_rob_idx2) ? alu_value : lsb_value);
+                        || (lsb_valid && lsb_rob_idx == query_rob_idx2) || (inst_valid && tail == query_rob_idx2 && inst_ready);
+
+    assign query_value2 = ready[query_rob_idx2] ? value[query_rob_idx2] : 
+                        (alu_valid && alu_rob_idx == query_rob_idx2) ? alu_value :
+                        (lsb_valid && lsb_rob_idx == query_rob_idx2) ? lsb_value :
+                        (inst_valid && tail == query_rob_idx2 && inst_ready) ? inst_value : 0;
 
 
     integer i;
@@ -97,6 +115,7 @@ module ReorderBuffer (
             next_pc <= 0;
             head <= 0;
             tail <= 0;
+            size <= 0;
             for (i = 0; i < ROB_SIZE; i = i + 1) begin
                 busy[i] <= 0;
                 ready[i] <= 0;
@@ -110,6 +129,7 @@ module ReorderBuffer (
             // do nothing
         end
         else begin
+            size <= next_size;
             // write back
             if (alu_valid) begin
                 ready[alu_rob_idx] <= 1;
@@ -127,6 +147,7 @@ module ReorderBuffer (
             end
             // commit
             if (can_commit) begin
+                // $display("commit [time:%0t] %d addr: %h", $time, commit_cnt, iaddr[head]);
                 commit_cnt <= commit_cnt + 1;
                 head <= head + 1;
                 busy[head] <= 0;
@@ -162,6 +183,9 @@ module ReorderBuffer (
                     $display("ERR: ROB full, head=%d, tail=%d", head, tail);
                     $finish;
                 end
+                // output wire [                 4 : 0] rf_set_idx,
+                // output wire [ `ROB_SIZE_BIT - 1 : 0] rf_set_dep,
+
             end
         end
     end

@@ -25,8 +25,8 @@ module Decoder(
     input  wire                          rf_has_dep2,
     input  wire [ `ROB_SIZE_BIT - 1 : 0] rf_get_dep2,
 
-    output wire [                 4 : 0] rf_set_idx,
-    output wire [ `ROB_SIZE_BIT - 1 : 0] rf_set_dep,
+    output reg [                 4 : 0] rf_set_idx,
+    output wire [ `ROB_SIZE_BIT - 1 : 0]  rf_set_dep,
 
     /// query ROB for dependency
     output wire  [`ROB_SIZE_BIT - 1 : 0] query_rob_idx1,
@@ -164,7 +164,6 @@ module Decoder(
             rob_inst_value <= 0;
             rob_inst_rd <= 0;
             rob_inst_addr <= 0;
-            
         end
         else if (!rdy_in) begin
             // do nothing
@@ -173,15 +172,17 @@ module Decoder(
             rob_inst_valid <= 0;
             rs_inst_valid <= 0;
             lsb_inst_valid <= 0;
+            rf_set_idx <= 0;
         end
         else begin
+            // $display("Decode %h:[%h] time:%0t opcode=%h",inst_addr, inst_data, $time, opcode);
             last_inst_addr <= inst_addr;
 
             rob_inst_valid <= need_rob;
             rob_inst_type <= opcode == OpcStore ? `ROB_ST : 
                         opcode == OpcBranch ? `ROB_BR : `ROB_RG;
             
-            rob_inst_rd <= rd;
+            rob_inst_rd <= use_rd ? rd : 0;
             rob_inst_addr <= inst_addr;
 // rob_inst_value, 
             
@@ -205,7 +206,10 @@ module Decoder(
                               opcode == OpcJAL ? next_addr :
                               opcode == OpcJALR ? next_addr :
                               opcode == OpcBranch ? br_addr : 0;
+            
+            rf_set_idx <= use_rd ? rd : 0;
         end
+        
     end
 
 
@@ -226,7 +230,7 @@ module Decoder(
     assign lsb_inst_rob_idx = rob_idx_tail;
 
     assign rf_set_dep = rob_idx_tail;
-    assign rf_set_idx = (f_ok && use_rd) ? rd : 0;
+    // assign rf_set_idx = (f_ok && use_rd) ? rd : 0;
 
     
 endmodule //Decoder
