@@ -94,7 +94,8 @@ module MemInter(
             state <= IDLE;
         end
         else if (rob_clear) begin
-            state <= next_state;
+            // state <= next_state;
+            state <= IDLE;
         end
         else if (rdy_in) begin
             case(state)

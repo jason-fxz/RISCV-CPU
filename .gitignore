@@ -8,3 +8,6 @@ fpga/*
 *.dump
 *.data
 fpga/fpga
+*.log
+*.diff
+*.vcd

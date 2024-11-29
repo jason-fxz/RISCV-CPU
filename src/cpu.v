@@ -422,6 +422,7 @@ module cpu(
         .clk_in(clk_in),
         .rst_in(rst_in),
         .rdy_in(rdy_in),
+        .rob_clear(rob_clear),
 
         // from reservation station
         .valid(rs_alu_valid),

@@ -77,14 +77,14 @@ module LoadStoreBuffer (
     wire [`LSB_SIZE_BIT : 0] next_size = pop_head && !inst_valid ? size - 1 : (!pop_head && inst_valid ? size + 1 : size);
     wire next_full = next_size == LSB_SIZE;
 
-    assign lsb_wb_valid = mem_ready && busy[head] && type[head][3] == 1'b0;
+    assign lsb_wb_valid = !rob_clear && mem_ready && busy[head] && type[head][3] == 1'b0;
     assign lsb_wb_idx = rob_idx[head];
     assign lsb_wb_value = mem_result;
 
     // load can be easily valid / store should be valid when rob commit
     wire [`LSB_SIZE_BIT - 1 : 0] head_k = mem_ready ? head + 1 : head;
     
-    assign mem_valid = !rob_clear && busy[head_k] && (type[head_k][3] != 1 || rob_head_valid && rob_head_id == rob_idx[head_k]);
+    assign mem_valid = !rob_clear && ready[head_k] && (type[head_k][3] != 1 || rob_head_valid && rob_head_id == rob_idx[head_k]);
     assign mem_wr = type[head_k][3];
     assign mem_len = type[head_k][2:0];
     assign mem_addr = r1[head_k] + {{20{offset[head_k][11]}}, offset[head_k]};
@@ -138,6 +138,7 @@ module LoadStoreBuffer (
 
             // remove head
             if (pop_head) begin
+                // $display("mem addr=%h value=%h wr=%b len=%b", r1[head] + {{20{offset[head][11]}}, offset[head]}, r2[head], type[head][3], type[head][2:0]);
                 head <= head + 1;
                 busy[head] <= 0;
             end

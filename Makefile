@@ -53,8 +53,9 @@ build_fpga_test: testcases _no_testcase_name_check
 	@find $(FPGA_TESTCASE_DIR) -name '*$(name)*.ans' -exec cp {} $(TESTSPACE_DIR)/test.ans \;
 
 run_sim: build_sim build_sim_test
-	# cd $(TESTSPACE_DIR) && ./test
+	# cd $(TESTSPACE_DIR) && ./test > test.log
 	cd $(TESTSPACE_DIR) && time -p stdbuf -o0 ./test | tee test.out.raw && bash ./judge.sh
+
 
 fpga_device := /dev/ttyUSB1
 fpga_run_mode := -I # or -T

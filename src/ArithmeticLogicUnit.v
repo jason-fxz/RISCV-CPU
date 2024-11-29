@@ -5,6 +5,8 @@ module ALU(
     input wire  rst_in,        // reset signal
     input wire  rdy_in,        // ready signal, pause cpu when low
 
+    input wire  rob_clear,
+
     // from reservation station
     input wire valid,                               // valid signal
     input wire [31 : 0] r1,                         // operand 1
@@ -37,7 +39,7 @@ module ALU(
 
 
     always @(posedge clk_in) begin
-        if (rst_in) begin
+        if (rst_in || rob_clear) begin
             ready <= 0;
             rob_idx <= 0;
             result <= 0;

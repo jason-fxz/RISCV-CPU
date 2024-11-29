@@ -90,7 +90,7 @@ module ReservationStation (
     endgenerate
 
     // Exe to ALU
-    assign alu_valid = executable;
+    assign alu_valid = executable && !rob_clear;
     assign alu_r1 = r1[exe_pos];
     assign alu_r2 = r2[exe_pos];
     assign alu_op = optype[exe_pos];

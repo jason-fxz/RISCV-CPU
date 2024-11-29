@@ -25,8 +25,8 @@ module Decoder(
     input  wire                          rf_has_dep2,
     input  wire [ `ROB_SIZE_BIT - 1 : 0] rf_get_dep2,
 
-    output reg [                 4 : 0] rf_set_idx,
-    output wire [ `ROB_SIZE_BIT - 1 : 0]  rf_set_dep,
+    output reg  [                 4 : 0] rf_set_idx,
+    output wire [ `ROB_SIZE_BIT - 1 : 0] rf_set_dep,
 
     /// query ROB for dependency
     output wire  [`ROB_SIZE_BIT - 1 : 0] query_rob_idx1,

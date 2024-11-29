@@ -147,7 +147,10 @@ module ReorderBuffer (
             end
             // commit
             if (can_commit) begin
-                // $display("commit [time:%0t] %d addr: %h", $time, commit_cnt, iaddr[head]);
+                // $display("commit %d addr: %h", commit_cnt, iaddr[head]);
+                // if (commit_reg_flag) begin
+                //     $display("reg: [%h] = %h", rob_set_idx, rob_set_reg_val);
+                // end
                 commit_cnt <= commit_cnt + 1;
                 head <= head + 1;
                 busy[head] <= 0;
