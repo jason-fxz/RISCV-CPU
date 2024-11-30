@@ -207,7 +207,7 @@ module cpu(
     wire                        lsb_inst_has_dep2;
     wire [11:0]                 lsb_inst_offset;
 
-    Decoder decoder (
+    DecoderC decoder (
         .clk_in(clk_in),
         .rst_in(rst_in),
         .rdy_in(rdy_in),
