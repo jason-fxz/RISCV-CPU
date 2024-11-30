@@ -108,8 +108,8 @@ module DecoderC(
     wire could_work = (!need_rob || !rob_full) && (!need_rs || !rs_full) && (!need_lsb || !lsb_full) && (opcode != OpcJALR || !has_dep1);
 
     // wire [31 : 0] next_addr = inst_addr + 32'd4;
-    wire [31 : 0] _jalr_addr = r1_val + {{20{immI[11]}}, immI[10:0]};
-    wire [31 : 0] _jal_addr  = inst_addr + {{11{immJ[20]}}, immJ, 1'b0};
+    // wire [31 : 0] _jalr_addr = r1_val + {{20{immI[11]}}, immI[10:0]};
+    // wire [31 : 0] _jal_addr  = inst_addr + {{11{immJ[20]}}, immJ, 1'b0};
     wire [31 : 0] _br_addr   = inst_addr + {{19{immB[12]}}, immB, 1'b0};
 
     assign f_ok = need_work && could_work;
@@ -123,6 +123,8 @@ module DecoderC(
     reg use_rd;
     reg [31 : 0] next_pc;
     reg [31 : 0] next_addr;
+    reg [31 : 0] jal_addr, jalr_addr;
+
 
     reg [31 : 0] d_inst_r1, d_inst_r2;
     reg [`RS_TYPE_BIT - 1 : 0] d_rs_inst_type;
@@ -130,34 +132,32 @@ module DecoderC(
     reg [11 : 0] d_lsb_inst_offset;
     reg d_rob_inst_ready;
     reg [31 : 0] d_rob_inst_value;
+
     
 
     always @* begin
         if (inst_valid) begin
+            next_addr = inst_addr + (inst_data[1 : 0] == 2'b11 ? 32'd4 : 32'd2);
+            d_rob_inst_value = 0;
+            d_inst_r2 = r2_val;
+
             case (inst_data[1 : 0])
                 2'b11: begin
                     rs1 = _rs1;
                     rs2 = _rs2;
                     rd = _rd;
-                    next_addr = inst_addr + 32'd4;
                     opcode = _opcode;
 
-                    need_rs = opcode == OpcArithR || opcode == OpcArithI  || opcode == OpcBranch;
-                    need_lsb = opcode == OpcLoad || opcode == OpcStore;
-                    use_rs1 = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcStore || opcode == OpcBranch || opcode == OpcJALR;
-                    use_rs2 = opcode == OpcArithR || opcode == OpcStore || opcode == OpcBranch;
-                    use_rd = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcJALR || opcode == OpcJAL || opcode == OpcLUI || opcode == OpcAUIPC;
+                    jalr_addr = r1_val + {{20{immI[11]}}, immI[10:0]};
+                    jal_addr  = inst_addr + {{11{immJ[20]}}, immJ, 1'b0};
 
-                    d_inst_r1 = r1_val;
                     d_inst_r2 = opcode == OpcArithI ? ((funct3 == 3'b001 || funct3 == 3'b101) ? immIs : {{20{immI[11]}}, immI}) : r2_val;
-                    next_pc = opcode == OpcJALR ? _jalr_addr : opcode == OpcJAL ? _jal_addr : next_addr;
 
                     d_rs_inst_type = {(opcode == OpcBranch), opcode == OpcArithR && funct7[5], funct3};
 
                     d_lsb_inst_type = {opcode == OpcStore, funct3};
                     d_lsb_inst_offset = opcode == OpcLoad ? immI : immS;
                     
-                    d_rob_inst_ready = opcode == OpcLUI || opcode == OpcAUIPC || opcode == OpcJAL || opcode == OpcJALR || opcode == OpcStore;
                     d_rob_inst_value = opcode == OpcLUI ? {immU, 12'b0} :
                                         opcode == OpcAUIPC ? inst_addr + {immU, 12'b0} :
                                         opcode == OpcJAL ? next_addr :
@@ -165,7 +165,204 @@ module DecoderC(
                                         opcode == OpcBranch ? _br_addr : 0;
                     
                 end
+                2'b01: begin
+                    case (inst_data[15 : 13]) 
+                        3'b000: begin // CI c.addi
+                            opcode = OpcArithI;
+                            rd = inst_data[11 : 7];
+                            rs1 = inst_data[11 : 7];
+                            d_inst_r2 = $signed({inst_data[12], inst_data[6 : 2]});
+                            d_rs_inst_type = {1'b0, 1'b0, 3'b000};
+                        end
+                        3'b001: begin // CJ c.jal
+                            opcode = OpcJAL;
+                            rd = 1;
+                            jal_addr = $signed(inst_addr) + $signed({inst_data[12],inst_data[8],inst_data[10:9],inst_data[6],inst_data[7],inst_data[2],inst_data[11],inst_data[5:3],1'b0});
+                            d_rob_inst_value = next_addr;
+                        end
+                        3'b010: begin // CI c.li
+                            opcode = OpcArithI;
+                            rd = inst_data[11 : 7];
+                            rs1 = 0;
+                            d_inst_r2 = $signed({inst_data[12], inst_data[6 : 2]});
+                            d_rs_inst_type = {1'b0, 1'b0, 3'b000};
+                        end
+                        3'b011: begin
+                            if (inst_data[11 : 7] == 5'b00010) begin // CI c.addi16sp
+                                opcode = OpcArithI;
+                                rd = 2;
+                                rs1 = 2;
+                                d_inst_r2 = $signed({inst_data[12],inst_data[4:3],inst_data[5],inst_data[2],inst_data[6],4'b0000});
+                                d_rs_inst_type = {1'b0, 1'b0, 3'b000};
+                            end
+                            else begin // CI c.lui
+                                opcode = OpcLUI;
+                                rd = inst_data[11 : 7];
+                                d_rob_inst_value = $signed({inst_data[12], inst_data[6 : 2], 12'b0});
+                            end
+                        end
+                        3'b100: begin
+                            case (inst_data[11 : 10]) 
+                                2'b00: begin // CI c.srli
+                                    opcode = OpcArithI;
+                                    rd = inst_data[9 : 7] + 5'd8;
+                                    rs1 = inst_data[9 : 7] + 5'd8;
+                                    d_inst_r2 = $unsigned({inst_data[12], inst_data[6 : 2]});
+                                    d_rs_inst_type = {1'b0, 1'b0, 3'b101};
+                                end
+                                2'b01: begin // CI c.srai
+                                    opcode = OpcArithI;
+                                    rd = inst_data[9 : 7] + 5'd8;
+                                    rs1 = inst_data[9 : 7] + 5'd8;
+                                    d_inst_r2 = $unsigned({inst_data[12], inst_data[6 : 2]});
+                                    d_rs_inst_type = {1'b0, 1'b1, 3'b101};
+                                end
+                                2'b10: begin // CI c.andi
+                                    opcode = OpcArithI;
+                                    rd = inst_data[9 : 7] + 5'd8;
+                                    rs1 = inst_data[9 : 7] + 5'd8;
+                                    d_inst_r2 = $signed({inst_data[12], inst_data[6 : 2]});
+                                    d_rs_inst_type = {1'b0, 1'b0, 3'b111};
+                                end
+                                2'b11: begin
+                                    opcode = OpcArithR;
+                                    rd = inst_data[9 : 7] + 5'd8;
+                                    rs1 = inst_data[9 : 7] + 5'd8;
+                                    rs2 = inst_data[4 : 2] + 5'd8;
+                                    case (inst_data[6 : 5])
+                                        2'b00: begin // CR c.sub
+                                            d_rs_inst_type = {1'b0, 1'b1, 3'b000};
+                                        end
+                                        2'b01: begin // CR c.xor
+                                            d_rs_inst_type = {1'b0, 1'b0, 3'b100};
+                                        end
+                                        2'b10: begin // CR c.or
+                                            d_rs_inst_type = {1'b0, 1'b0, 3'b110};
+                                        end
+                                        2'b11: begin // CR c.and
+                                            d_rs_inst_type = {1'b0, 1'b0, 3'b111};
+                                        end
+                                    endcase
+                                end
+                            endcase
+                        end
+                        3'b101: begin // CJ c.j
+                            opcode = OpcJAL;
+                            rd = 0;
+                            jal_addr = $signed(inst_addr) + $signed({inst_data[12],inst_data[8],inst_data[10:9],inst_data[6],inst_data[7],inst_data[2],inst_data[11],inst_data[5:3],1'b0});
+                            d_rob_inst_value = next_addr;
+                        end
+                        3'b110: begin // CB c.beqz
+                            opcode = OpcBranch;
+                            rs1 = inst_data[9 : 7] + 5'd8;
+                            rs2 = 0;
+                            d_rs_inst_type = {1'b1, 1'b0, 3'b000};
+                            d_rob_inst_value = $signed(inst_addr) + $signed({inst_data[12],inst_data[6:5],inst_data[2],inst_data[11:10],inst_data[4:3],1'b0});
+                        end
+                        3'b111: begin // CB c.bnez
+                            opcode = OpcBranch;
+                            rs1 = inst_data[9 : 7] + 5'd8;
+                            rs2 = 0;
+                            d_rs_inst_type = {1'b1, 1'b0, 3'b001};
+                            d_rob_inst_value = $signed(inst_addr) + $signed({inst_data[12],inst_data[6:5],inst_data[2],inst_data[11:10],inst_data[4:3],1'b0});
+                        end
+                    endcase 
+                end
+                2'b00: begin
+                    case (inst_data[15 : 13])
+                        3'b000: begin // CIW c.addi4spn
+                            opcode = OpcArithI;
+                            rd = inst_data[4 : 2] + 5'd8;
+                            rs1 = 2;
+                            d_inst_r2 = $unsigned({inst_data[10:7],inst_data[12:11],inst_data[5],inst_data[6],2'b00});
+                            d_rs_inst_type = {1'b0, 1'b0, 3'b000};
+                        end
+                        3'b010: begin // CL c.lw
+                            opcode = OpcLoad;
+                            rd = inst_data[4 : 2] + 5'd8;
+                            rs1 = inst_data[9 : 7] + 5'd8;
+                            d_lsb_inst_type = {1'b0, 3'b010};
+                            d_lsb_inst_offset = $unsigned({inst_data[5],inst_data[12:10],inst_data[6],2'b00});
+                        end
+                        3'b110: begin // CS c.sw
+                            opcode = OpcStore;
+                            rs1 = inst_data[9 : 7] + 5'd8;
+                            rs2 = inst_data[4 : 2] + 5'd8;
+                            d_lsb_inst_type = {1'b1, 3'b010};
+                            d_lsb_inst_offset = $unsigned({inst_data[5],inst_data[12:10],inst_data[6],2'b00});
+                        end
+                    endcase
+                end
+                2'b10: begin
+                    case (inst_data[15 : 13])
+                        3'b000: begin // CI c.slli
+                            opcode = OpcArithI;
+                            rd = inst_data[11 : 7];
+                            rs1 = inst_data[11 : 7];
+                            d_inst_r2 = $unsigned({inst_data[12], inst_data[6 : 2]});
+                            d_rs_inst_type = {1'b0, 1'b0, 3'b001};
+                        end
+                        3'b010: begin // CSS c.lwsp
+                            opcode = OpcLoad;
+                            rd = inst_data[11 : 7];
+                            rs1 = 2;
+                            d_lsb_inst_type = {1'b0, 3'b010};
+                            d_lsb_inst_offset = $unsigned({inst_data[3:2],inst_data[12],inst_data[6:4],2'b00});
+                        end
+                        3'b100: begin
+                            if (inst_data[12] == 0) begin
+                                if (inst_data[6:2] == 5'b00000) begin // CJ c.jr
+                                    opcode = OpcJALR;
+                                    rd = 0;
+                                    rs1 = inst_data[11 : 7];
+                                    jalr_addr = r1_val;
+                                    d_rob_inst_value = next_addr;
+                                end
+                                else begin // CR c.mv
+                                    opcode = OpcArithR;
+                                    rd = inst_data[11 : 7];
+                                    rs1 = 0;
+                                    rs2 = inst_data[6 : 2];
+                                    d_rs_inst_type = {1'b0, 1'b0, 3'b000};
+                                end
+                            end
+                            else begin
+                                if (inst_data[6:2] == 5'b00000) begin // CJ c.jalr
+                                    opcode = OpcJALR;
+                                    rd = 1;
+                                    rs1 = inst_data[11 : 7];
+                                    jalr_addr = r1_val;
+                                    d_rob_inst_value = next_addr;
+                                end
+                                else begin // CR c.add
+                                    opcode = OpcArithR;
+                                    rd = inst_data[11 : 7];
+                                    rs1 = inst_data[11 : 7];
+                                    rs2 = inst_data[6 : 2];
+                                    d_rs_inst_type = {1'b0, 1'b0, 3'b000};
+                                end
+                            end
+                        end
+                        3'b110: begin // CSS c.swsp
+                            opcode = OpcStore;
+                            rs1 = 2;
+                            rs2 = inst_data[6 : 2];
+                            d_lsb_inst_type = {1'b1, 3'b010};
+                            d_lsb_inst_offset = $unsigned({inst_data[8:7],inst_data[12:9],2'b00});
+                        end
+                    endcase
+                end
+
             endcase
+
+            next_pc = opcode == OpcJALR ? jalr_addr : opcode == OpcJAL ? jal_addr : next_addr;
+            d_inst_r1 = r1_val;
+            d_rob_inst_ready = opcode == OpcLUI || opcode == OpcAUIPC || opcode == OpcJAL || opcode == OpcJALR || opcode == OpcStore;
+            need_rs = opcode == OpcArithR || opcode == OpcArithI  || opcode == OpcBranch;
+            need_lsb = opcode == OpcLoad || opcode == OpcStore;
+            use_rs1 = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcStore || opcode == OpcBranch || opcode == OpcJALR;
+            use_rs2 = opcode == OpcArithR || opcode == OpcStore || opcode == OpcBranch;
+            use_rd = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcJALR || opcode == OpcJAL || opcode == OpcLUI || opcode == OpcAUIPC;
         end
         else begin
 
