@@ -58,10 +58,10 @@ module InstuctionCache #(
     wire [31 : 0] inst_res_next = (inst_type == 0) ? value[idx1] : {value[idx2][15:0], value[idx1][31:16]};
 
     assign q1_valid = inst_valid && !hit1 && !q1_ready;
-    assign q1_addr = addr1;
+    assign q1_addr = (inst_type == 0) ? addr1 : addr1 - 32'd2;
 
-    assign q2_valid = inst_valid && !hit2 && inst_type == 1;
-    assign q2_addr = addr2;
+    assign q2_valid = inst_valid && !hit2 && inst_type == 1 && !q2_ready;
+    assign q2_addr = (inst_type == 0) ? addr2 + 32'd2: addr2;
 
 
     integer i;

@@ -133,6 +133,7 @@ module DecoderC(
     reg d_rob_inst_ready;
     reg [31 : 0] d_rob_inst_value;
 
+    wire [31 : 0] inst = inst_valid ? inst_data[1 : 0] == 2'b11 ? inst_data : inst_data[15 : 0] : 0;
     
 
     always @* begin
