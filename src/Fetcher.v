@@ -30,17 +30,17 @@ module Fetcher(
     reg [31 : 0] tmp_inst_result;
     reg          tmp_inst_valid;
 
+    wire [31 : 0] next_pc;
+
     assign mem_valid = dc_ok ? 1 : mem_ready ? 0 : enable_fetch;
     assign mem_addr = dc_ok ? next_pc : PC;
-
-
 
     assign inst_valid = mem_ready || tmp_inst_valid;
     assign inst_result = mem_ready ? mem_result : tmp_inst_result;
     assign inst_addr = PC;
 
 
-    wire [31 : 0] next_pc = rob_clear ? rob_next_pc : dc_next_pc;
+    assign next_pc = rob_clear ? rob_next_pc : dc_next_pc;
 
 
     always @(posedge clk_in) begin

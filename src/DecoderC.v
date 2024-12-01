@@ -101,22 +101,14 @@ module DecoderC(
 
     reg [31 : 0] last_inst_addr;
 
-    wire need_work = inst_valid && (last_inst_addr != inst_addr);
-    wire need_rob = 1'b1;
-    // wire need_rs = opcode == OpcArithR || opcode == OpcArithI  || opcode == OpcBranch;
-    // wire need_lsb = opcode == OpcLoad || opcode == OpcStore;
-    wire could_work = (!need_rob || !rob_full) && (!need_rs || !rs_full) && (!need_lsb || !lsb_full) && (opcode != OpcJALR || !has_dep1);
-
-    // wire [31 : 0] next_addr = inst_addr + 32'd4;
-    // wire [31 : 0] _jalr_addr = r1_val + {{20{immI[11]}}, immI[10:0]};
-    // wire [31 : 0] _jal_addr  = inst_addr + {{11{immJ[20]}}, immJ, 1'b0};
-    wire [31 : 0] _br_addr   = inst_addr + {{19{immB[12]}}, immB, 1'b0};
-
-    assign f_ok = need_work && could_work;
-    assign f_next_pc = next_pc;
+    wire has_dep1;
+    wire has_dep2;
+    wire [31 : 0] r1_val;
+    wire [31 : 0] r2_val;
     
     reg [4 : 0] rd, rs1, rs2;
     reg need_rs = 0, need_lsb = 0;
+    wire need_work, need_rob, could_work;
     reg [6 : 0] opcode;
     reg use_rs1;
     reg use_rs2;
@@ -133,8 +125,14 @@ module DecoderC(
     reg d_rob_inst_ready;
     reg [31 : 0] d_rob_inst_value;
 
-    wire [31 : 0] inst = inst_valid ? inst_data[1 : 0] == 2'b11 ? inst_data : inst_data[15 : 0] : 0;
-    
+    // wire [31 : 0] inst = inst_valid ? inst_data[1 : 0] == 2'b11 ? inst_data : inst_data[15 : 0] : 0;
+
+    assign need_work = inst_valid && (last_inst_addr != inst_addr);
+    assign need_rob = 1'b1;
+    assign could_work = (!need_rob || !rob_full) && (!need_rs || !rs_full) && (!need_lsb || !lsb_full) && (opcode != OpcJALR || !has_dep1);
+
+    assign f_ok = need_work && could_work;
+    assign f_next_pc = next_pc;
 
     always @* begin
         if (inst_valid) begin
@@ -163,7 +161,7 @@ module DecoderC(
                                         opcode == OpcAUIPC ? inst_addr + {immU, 12'b0} :
                                         opcode == OpcJAL ? next_addr :
                                         opcode == OpcJALR ? next_addr :
-                                        opcode == OpcBranch ? _br_addr : 0;
+                                        opcode == OpcBranch ? (inst_addr + {{19{immB[12]}}, immB, 1'b0}) : 0;
                     
                 end
                 2'b01: begin
@@ -370,7 +368,10 @@ module DecoderC(
         end
     end
 
-
+    // for decode result
+    reg [               31 : 0] inst_r1, inst_r2;
+    reg                         inst_has_dep1, inst_has_dep2;
+    reg [`ROB_SIZE_BIT - 1 : 0] inst_dep1, inst_dep2;
 
     // dependency check
     assign rf_get_idx1 = rs1;
@@ -378,15 +379,10 @@ module DecoderC(
     assign query_rob_idx1 = rf_get_dep1;
     assign query_rob_idx2 = rf_get_dep2;
 
-    wire has_dep1 = rf_has_dep1 && !query_ready1;
-    wire has_dep2 = rf_has_dep2 && !query_ready2;
-    wire [31 : 0] r1_val = !rf_has_dep1 ? rf_get_val1 : (query_ready1 ? query_value1 : 0);
-    wire [31 : 0] r2_val = !rf_has_dep2 ? rf_get_val2 : (query_ready2 ? query_value2 : 0);
-
-    // for decode result
-    reg [               31 : 0] inst_r1, inst_r2;
-    reg                         inst_has_dep1, inst_has_dep2;
-    reg [`ROB_SIZE_BIT - 1 : 0] inst_dep1, inst_dep2;
+    assign has_dep1 = rf_has_dep1 && !query_ready1;
+    assign has_dep2 = rf_has_dep2 && !query_ready2;
+    assign r1_val = !rf_has_dep1 ? rf_get_val1 : (query_ready1 ? query_value1 : 0);
+    assign r2_val = !rf_has_dep2 ? rf_get_val2 : (query_ready2 ? query_value2 : 0);
 
 
     always @(posedge clk_in) begin
