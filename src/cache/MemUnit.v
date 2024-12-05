@@ -46,9 +46,10 @@ module MemUnit(
     // State: have read x Byte
     reg    [1:0]  state;
 
-    wire   need_work = valid;
+    wire   is_io_mapping = mem_a[17 : 16]==2'b11;
+    wire   need_work = valid && (is_io_mapping ? !io_buffer_full : 1'b1);
     wire   [2:0] totalbyte = len[1] ? 3'd4 : len[0] ? 3'd2 : 3'd1;
-    wire   next_ready = valid && (totalbyte - 1 == state);
+    wire   next_ready = need_work && (totalbyte - 1 == state);
 
     wire   direct = (state == 2'b00) && need_work;
     assign mem_a = direct ? addr : cur_addr;
