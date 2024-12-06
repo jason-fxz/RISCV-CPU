@@ -1,13 +1,6 @@
 // a simple unit to handle memory access
 // read/write Byte/Halfword/Word
 
-/// Behavior:
-//  ready unset:
-//    set valid to work. wr, addr, len, data_in should not be changed
-//  ready set:
-//    
-
-
 module MemUnit(
     input wire clk_in,        // system clock signal
     input wire rst_in,        // reset signal
@@ -46,8 +39,8 @@ module MemUnit(
     // State: have read x Byte
     reg    [1:0]  state;
 
-    wire   is_io_mapping = mem_a[17 : 16]==2'b11;
-    wire   need_work = valid && (is_io_mapping ? !io_buffer_full : 1'b1);
+    wire   is_io_mapping = addr[17 : 16]==2'b11;
+    wire   need_work = valid && !(is_io_mapping && io_buffer_full && wr);
     wire   [2:0] totalbyte = len[1] ? 3'd4 : len[0] ? 3'd2 : 3'd1;
     wire   next_ready = need_work && (totalbyte - 1 == state);
 
@@ -112,14 +105,14 @@ module MemUnit(
                     else begin // Word
                         state <= 2'b10;
                         cur_addr <= cur_addr + 1; // next addr
-                        cur_data_to_write <= data_in[23:16]; // next write
+                        cur_data_to_write <= cur_data_in[23:16]; // next write
                     end
                 end
                 2'b10: begin
                     state <= 2'b11;
                     tmp_data[15:8] <= mem_din; // read data
                     cur_addr <= cur_addr + 1;
-                    cur_data_to_write <= data_in[31:24];
+                    cur_data_to_write <= cur_data_in[31:24];
                 end
                 2'b11: begin
                     state <= 2'b00;

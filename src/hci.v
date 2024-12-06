@@ -184,17 +184,25 @@ always @(posedge clk)
         q_cpu_cycle_cnt    <= d_cpu_cycle_cnt;
         q_io_dout          <= d_io_dout;
         program_finish     <= d_program_finish;
-        if (d_program_finish) begin
-          `ifndef ONLINE_JUDGE
-            $display("IO:Return");
-          `endif
-            $finish(0);
-        end
-        if (sim_out_en) begin
-          $write("%c", sim_out);
-        end
       end
   end
+
+
+always @(posedge clk) begin
+  if (!rst) begin
+    // output
+    if (sim_out_en) begin
+      $write("%c", sim_out);
+    end
+    // shutdown
+    if (d_program_finish) begin
+      `ifndef ONLINE_JUDGE
+      $display("IO:Return");
+      `endif
+      $finish(0);
+    end
+  end
+end
 
 // Instantiate the serial controller block.
 uart #(.SYS_CLK_FREQ(SYS_CLK_FREQ),
@@ -215,25 +223,6 @@ uart #(.SYS_CLK_FREQ(SYS_CLK_FREQ),
   .tx_full(tx_full),
   .parity_err(parity_err)
 );
-
-// always @(program_finish)
-//   begin
-//     if (program_finish) begin
-//     `ifndef ONLINE_JUDGE
-//       $display("IO:Return");
-//     `endif
-//       $finish(0);
-//     end
-//   end
-
-// always @(q_wr_en)
-//   begin
-//     if (q_wr_en && q_tx_data != 8'h00)
-//       begin
-//         // $display("IO:out:[%h]%c, %0t",q_tx_data, q_tx_data, $time);
-//         $write("%c", q_tx_data);
-//       end
-//   end
 
 always @*
   begin
@@ -287,8 +276,6 @@ always @*
             end
             sim_out = io_din;
             sim_out_en = 1'b1;
-              // $write("%c", io_din);
-              // $display("IO:out:[%h]%c, %0t tx_full = %b",io_din, io_din, $time, tx_full);
           end
           3'h4: begin      // 0x30004 write: indicates program stop
             if (!tx_full) begin
@@ -297,10 +284,6 @@ always @*
             end
             d_state = S_DECODE; 
             d_program_finish = 1'b1;
-          // `ifndef ONLINE_JUDGE
-          //   $display("IO:Return");
-          // `endif
-          //   $finish(0);
           end
         endcase
       end else begin
