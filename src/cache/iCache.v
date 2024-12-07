@@ -75,12 +75,12 @@ module InstuctionCache #(
             inst_ready <= 0;
             inst_res <= 0;
         end
-        else if (!rdy_in) begin
-            // do nothing
-        end
         else if (rob_clear) begin
             inst_ready <= 0;
             inst_res <= 0;
+        end
+        else if (!rdy_in) begin
+            // do nothing
         end
         else begin
             inst_ready <= hit1 && hit2;

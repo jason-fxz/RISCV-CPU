@@ -100,26 +100,36 @@ module Decoder(
     wire [20 : 1] immJ = {inst_data[31], inst_data[19 : 12], inst_data[20], inst_data[30 : 21]};
 
     reg [31 : 0] last_inst_addr;
+    wire need_work, need_rob, need_rs, need_lsb, could_work;
+    wire use_rs1, use_rs2, use_rd;
+    wire [31 : 0] next_addr;
+    wire [31 : 0] jalr_addr;
+    wire [31 : 0] jal_addr;
+    wire [31 : 0] br_addr;
 
-    wire need_work = inst_valid && (last_inst_addr != inst_addr);
-    wire need_rob = 1'b1;
-    wire need_rs = opcode == OpcArithR || opcode == OpcArithI  || opcode == OpcBranch;
-    wire need_lsb = opcode == OpcLoad || opcode == OpcStore;
-    wire could_work = (!need_rob || !rob_full) && (!need_rs || !rs_full) && (!need_lsb || !lsb_full) && (opcode != OpcJALR || !has_dep1);
+    wire has_dep1, has_dep2;
+    wire [31 : 0] r1_val;
+    wire [31 : 0] r2_val;
 
-    wire [31 : 0] next_addr = inst_addr + 32'd4;
-    wire [31 : 0] jalr_addr = r1_val + {{20{immI[11]}}, immI[10:0]};
-    wire [31 : 0] jal_addr  = inst_addr + {{11{immJ[20]}}, immJ, 1'b0};
-    wire [31 : 0] br_addr   = inst_addr + {{19{immB[12]}}, immB, 1'b0};
+    assign need_work = inst_valid && (last_inst_addr != inst_addr);
+    assign need_rob = 1'b1;
+    assign need_rs = opcode == OpcArithR || opcode == OpcArithI  || opcode == OpcBranch;
+    assign need_lsb = opcode == OpcLoad || opcode == OpcStore;
+    assign could_work = (!need_rob || !rob_full) && (!need_rs || !rs_full) && (!need_lsb || !lsb_full) && (opcode != OpcJALR || !has_dep1);
+
+    assign next_addr = inst_addr + 32'd4;
+    assign jalr_addr = r1_val + {{20{immI[11]}}, immI[10:0]};
+    assign jal_addr  = inst_addr + {{11{immJ[20]}}, immJ, 1'b0};
+    assign br_addr   = inst_addr + {{19{immB[12]}}, immB, 1'b0};
 
     assign f_ok = need_work && could_work;
     assign f_next_pc = opcode == OpcJALR ? jalr_addr : 
                        opcode == OpcJAL ? jal_addr :
                        next_addr;
 
-    wire use_rs1 = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcStore || opcode == OpcBranch || opcode == OpcJALR;
-    wire use_rs2 = opcode == OpcArithR || opcode == OpcStore || opcode == OpcBranch;
-    wire use_rd = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcJALR || opcode == OpcJAL || opcode == OpcLUI || opcode == OpcAUIPC;
+    assign use_rs1 = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcStore || opcode == OpcBranch || opcode == OpcJALR;
+    assign use_rs2 = opcode == OpcArithR || opcode == OpcStore || opcode == OpcBranch;
+    assign use_rd = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcJALR || opcode == OpcJAL || opcode == OpcLUI || opcode == OpcAUIPC;
 
 
 
@@ -129,10 +139,10 @@ module Decoder(
     assign query_rob_idx1 = rf_get_dep1;
     assign query_rob_idx2 = rf_get_dep2;
 
-    wire has_dep1 = rf_has_dep1 && !query_ready1;
-    wire has_dep2 = rf_has_dep2 && !query_ready2;
-    wire [31 : 0] r1_val = !rf_has_dep1 ? rf_get_val1 : (query_ready1 ? query_value1 : 0);
-    wire [31 : 0] r2_val = !rf_has_dep2 ? rf_get_val2 : (query_ready2 ? query_value2 : 0);
+    assign has_dep1 = rf_has_dep1 && !query_ready1;
+    assign has_dep2 = rf_has_dep2 && !query_ready2;
+    assign r1_val = !rf_has_dep1 ? rf_get_val1 : (query_ready1 ? query_value1 : 0);
+    assign r2_val = !rf_has_dep2 ? rf_get_val2 : (query_ready2 ? query_value2 : 0);
 
     // for decode result
     reg [               31 : 0] inst_r1, inst_r2;

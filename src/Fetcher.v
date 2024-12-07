@@ -51,9 +51,6 @@ module Fetcher(
             tmp_inst_result <= 0;
             tmp_inst_valid <= 0;
         end
-        else if (!rdy_in) begin 
-            // do nothing
-        end
         else if (rob_clear) begin
             
             // $display("clear!! %0t next_pc = %h", $time, next_pc);
@@ -62,6 +59,9 @@ module Fetcher(
             tmp_inst_addr <= 0;
             tmp_inst_result <= 0;
             tmp_inst_valid <= 0;
+        end
+        else if (!rdy_in) begin 
+            // do nothing
         end
         else begin
             // fetch ok

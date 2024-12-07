@@ -36,31 +36,6 @@ module cpu(
     wire [31:0]                 rob_set_reg_val;
     wire [`ROB_SIZE_BIT - 1:0]  rob_set_recorder;
 
-    RegisterFile register_file (
-        .clk_in(clk_in),
-        .rst_in(rst_in),
-        .rdy_in(rdy_in),
-        .rob_clear(rob_clear), 
-
-        // From ROB
-        .rob_set_idx(rob_set_idx), 
-        .rob_set_reg_val(rob_set_reg_val), 
-        .rob_set_recorder(rob_set_recorder), 
-
-        // From Decoder (Issue)
-        .get_idx1(rf_get_idx1), 
-        .get_reg_val1(rf_get_val1), 
-        .get_has_dep1(rf_has_dep1), 
-        .get_recorder1(rf_get_dep1), 
-        .get_idx2(rf_get_idx2), 
-        .get_reg_val2(rf_get_val2), 
-        .get_has_dep2(rf_has_dep2), 
-        .get_recorder2(rf_get_dep2), 
-
-        // Set register recorder
-        .set_reg_recorder_idx(rf_set_idx), 
-        .set_reg_recorder_val(rf_set_dep) 
-    );
     
     // 定义 MemInter 所需的信号
     wire                        mem_inst_valid;
@@ -83,78 +58,7 @@ module cpu(
     wire [31:0]                 ic_q2_addr;
     wire [31:0]                 ic_q2_result;
     wire                        ic_q2_ready;
-
-    MemInter mem_inter (
-        .clk_in(clk_in),
-        .rst_in(rst_in),
-        .rdy_in(rdy_in),
-        .mem_din(mem_din),
-        .mem_dout(mem_dout),
-        .mem_a(mem_a),
-        .mem_wr(mem_wr),
-        .io_buffer_full(io_buffer_full),
-        .rob_clear(rob_clear),
-        .inst1_valid(ic_q1_valid),
-        .inst1_addr(ic_q1_addr),
-        .inst1_result(ic_q1_result),
-        .inst1_ready(ic_q1_ready),
-        
-        // .inst1_valid(mem_inst_valid),
-        // .inst1_addr(mem_inst_addr),
-        // .inst1_result(mem_inst_result),
-        // .inst1_ready(mem_inst_ready),
-        // .inst2_valid(0),
-        
-        .inst2_valid(ic_q2_valid),
-        .inst2_addr(ic_q2_addr),
-        .inst2_result(ic_q2_result),
-        .inst2_ready(ic_q2_ready),
-        .data_valid(mem_data_valid),
-        .data_wr(mem_data_wr),
-        .data_len(mem_data_len),
-        .data_addr(mem_data_addr),
-        .data_value(mem_data_value),
-        .data_ready(mem_data_ready),
-        .data_result(mem_data_result)
-    );
-
-    InstuctionCache i_cache (
-        .clk_in(clk_in),
-        .rst_in(rst_in),
-        .rdy_in(rdy_in),
-        .inst_valid(mem_inst_valid),
-        .inst_addr(mem_inst_addr),
-        .inst_res(mem_inst_result),
-        .inst_ready(mem_inst_ready),
-        .q1_valid(ic_q1_valid),
-        .q1_addr(ic_q1_addr),
-        .q1_result(ic_q1_result),
-        .q1_ready(ic_q1_ready),
-        .q2_valid(ic_q2_valid),
-        .q2_addr(ic_q2_addr),
-        .q2_result(ic_q2_result),
-        .q2_ready(ic_q2_ready),
-        .rob_clear(rob_clear)
-    );
-
-    Fetcher fetcher (
-        .clk_in(clk_in),
-        .rst_in(rst_in),
-        .rdy_in(rdy_in),
-        .mem_valid(mem_inst_valid),
-        .mem_addr(mem_inst_addr),
-        .mem_result(mem_inst_result),
-        .mem_ready(mem_inst_ready),
-        .dc_ok(dc_ok),
-        .dc_next_pc(dc_next_pc),
-        .inst_valid(fetcher_inst_valid),
-        .inst_addr(fetcher_inst_addr),
-        .inst_result(fetcher_inst_result),
-        .rob_clear(rob_clear),
-        .rob_next_pc(rob_next_pc)
-    );
-
-    wire                        fetcher_inst_valid;
+     wire                        fetcher_inst_valid;
     wire [31:0]                 fetcher_inst_addr;
     wire [31:0]                 fetcher_inst_result;
     wire                        dc_ok;
@@ -206,6 +110,124 @@ module cpu(
     wire                        lsb_inst_has_dep1;
     wire                        lsb_inst_has_dep2;
     wire [11:0]                 lsb_inst_offset;
+
+    wire                        alu_wb_valid;
+    wire [`ROB_SIZE_BIT - 1:0]  alu_wb_rob_idx;
+    wire [31:0]                 alu_wb_value;
+
+    wire                        lsb_wb_valid;
+    wire [`ROB_SIZE_BIT - 1:0]  lsb_wb_rob_idx;
+    wire [31:0]                 lsb_wb_value;
+
+
+    wire [`ROB_SIZE_BIT - 1:0]  rob_idx_head;
+    wire                        rob_head_valid;
+    wire                        lsb_st_ok;
+    wire [`ROB_SIZE_BIT - 1:0]  rob_idx_tail;
+
+    wire                        rs_alu_valid;
+    wire [31:0]                 rs_alu_r1;
+    wire [31:0]                 rs_alu_r2;
+    wire [`RS_TYPE_BIT - 1:0]   rs_alu_op;
+    wire [`ROB_SIZE_BIT - 1:0]  rs_alu_rob_idx;
+
+    RegisterFile register_file (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
+        .rob_clear(rob_clear), 
+
+        // From ROB
+        .rob_set_idx(rob_set_idx), 
+        .rob_set_reg_val(rob_set_reg_val), 
+        .rob_set_recorder(rob_set_recorder), 
+
+        // From Decoder (Issue)
+        .get_idx1(rf_get_idx1), 
+        .get_reg_val1(rf_get_val1), 
+        .get_has_dep1(rf_has_dep1), 
+        .get_recorder1(rf_get_dep1), 
+        .get_idx2(rf_get_idx2), 
+        .get_reg_val2(rf_get_val2), 
+        .get_has_dep2(rf_has_dep2), 
+        .get_recorder2(rf_get_dep2), 
+
+        // Set register recorder
+        .set_reg_recorder_idx(rf_set_idx), 
+        .set_reg_recorder_val(rf_set_dep) 
+    );
+
+    MemInter mem_inter (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
+        .mem_din(mem_din),
+        .mem_dout(mem_dout),
+        .mem_a(mem_a),
+        .mem_wr(mem_wr),
+        .io_buffer_full(io_buffer_full),
+        .rob_clear(rob_clear),
+        // .inst1_valid(ic_q1_valid),
+        // .inst1_addr(ic_q1_addr),
+        // .inst1_result(ic_q1_result),
+        // .inst1_ready(ic_q1_ready),
+        
+        .inst1_valid(mem_inst_valid),
+        .inst1_addr(mem_inst_addr),
+        .inst1_result(mem_inst_result),
+        .inst1_ready(mem_inst_ready),
+        .inst2_valid(0),
+        
+        // .inst2_valid(ic_q2_valid),
+        .inst2_addr(ic_q2_addr),
+        .inst2_result(ic_q2_result),
+        .inst2_ready(ic_q2_ready),
+        .data_valid(mem_data_valid),
+        .data_wr(mem_data_wr),
+        .data_len(mem_data_len),
+        .data_addr(mem_data_addr),
+        .data_value(mem_data_value),
+        .data_ready(mem_data_ready),
+        .data_result(mem_data_result)
+    );
+
+    // InstuctionCache i_cache (
+    //     .clk_in(clk_in),
+    //     .rst_in(rst_in),
+    //     .rdy_in(rdy_in),
+    //     .inst_valid(mem_inst_valid),
+    //     .inst_addr(mem_inst_addr),
+    //     .inst_res(mem_inst_result),
+    //     .inst_ready(mem_inst_ready),
+    //     .q1_valid(ic_q1_valid),
+    //     .q1_addr(ic_q1_addr),
+    //     .q1_result(ic_q1_result),
+    //     .q1_ready(ic_q1_ready),
+    //     .q2_valid(ic_q2_valid),
+    //     .q2_addr(ic_q2_addr),
+    //     .q2_result(ic_q2_result),
+    //     .q2_ready(ic_q2_ready),
+    //     .rob_clear(rob_clear)
+    // );
+
+    Fetcher fetcher (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
+        .mem_valid(mem_inst_valid),
+        .mem_addr(mem_inst_addr),
+        .mem_result(mem_inst_result),
+        .mem_ready(mem_inst_ready),
+        .dc_ok(dc_ok),
+        .dc_next_pc(dc_next_pc),
+        .inst_valid(fetcher_inst_valid),
+        .inst_addr(fetcher_inst_addr),
+        .inst_result(fetcher_inst_result),
+        .rob_clear(rob_clear),
+        .rob_next_pc(rob_next_pc)
+    );
+
+   
 
     DecoderC decoder (
         .clk_in(clk_in),
@@ -319,19 +341,7 @@ module cpu(
         .next_pc(rob_next_pc)
     );
 
-    wire                        alu_wb_valid;
-    wire [`ROB_SIZE_BIT - 1:0]  alu_wb_rob_idx;
-    wire [31:0]                 alu_wb_value;
-
-    wire                        lsb_wb_valid;
-    wire [`ROB_SIZE_BIT - 1:0]  lsb_wb_rob_idx;
-    wire [31:0]                 lsb_wb_value;
-
-
-    wire [`ROB_SIZE_BIT - 1:0]  rob_idx_head;
-    wire                        rob_head_valid;
-    wire                        lsb_st_ok;
-    wire [`ROB_SIZE_BIT - 1:0]  rob_idx_tail;
+    
 
     
     ReservationStation reservation_station (
@@ -368,12 +378,6 @@ module cpu(
         .lsb_wb_idx(lsb_wb_rob_idx),
         .lsb_wb_value(lsb_wb_value)
     );
-
-    wire                        rs_alu_valid;
-    wire [31:0]                 rs_alu_r1;
-    wire [31:0]                 rs_alu_r2;
-    wire [`RS_TYPE_BIT - 1:0]   rs_alu_op;
-    wire [`ROB_SIZE_BIT - 1:0]  rs_alu_rob_idx;
 
     LoadStoreBuffer load_store_buffer (
         .clk_in(clk_in),

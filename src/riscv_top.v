@@ -107,7 +107,7 @@ cpu cpu0(
 	.mem_a(cpu_ram_a),
 	.mem_wr(cpu_ram_wr),
 	
-	.io_buffer_full(hci_io_full & ~SIM),
+	.io_buffer_full(SIM ? 1'b0 : hci_io_full),
 
 	.dbgreg_dout(cpu_dbgreg_dout)
 );

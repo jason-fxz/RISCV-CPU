@@ -25,8 +25,9 @@ endif
 
 testcases:
 	# cd $(TESTCASE_DIR)
-	docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
+	# docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
 	# cd $(PWD)
+	make -C $(TESTCASE_DIR)
 
 _no_testcase_name_check:
 ifndef name
@@ -58,7 +59,7 @@ run_sim: build_sim build_sim_test
 
 
 fpga_device := /dev/ttyUSB1
-fpga_run_mode := -I # or -T
+fpga_run_mode := -T # or -T
 
 # Please manually load .bit file to FPGA
 run_fpga: build_fpga_test
