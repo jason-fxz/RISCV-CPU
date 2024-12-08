@@ -84,7 +84,7 @@ module LoadStoreBuffer (
     // load can be easily valid / store should be valid when rob commit
     wire [`LSB_SIZE_BIT - 1 : 0] head_k = mem_ready ? head + 1 : head;
     
-    assign mem_valid = !rob_clear && ready[head_k] && (type[head_k][3] != 1 || rob_head_valid && rob_head_id == rob_idx[head_k]);
+    assign mem_valid = !rob_clear && ready[head_k] && (rob_head_valid && rob_head_id == rob_idx[head_k] || type[head_k][3] == 0 && mem_addr[17 : 16] != 2'b11);
     assign mem_wr = type[head_k][3];
     assign mem_len = type[head_k][2:0];
     assign mem_addr = r1[head_k] + {{20{offset[head_k][11]}}, offset[head_k]};

@@ -68,6 +68,8 @@ module ReorderBuffer (
 
     reg [31 : 0] commit_cnt; // commit counter (debug)
 
+    wire [31 : 0] commit_addr = iaddr[head]; // debug
+
     // wire [31 : 0] rob_head_addr = iaddr[head]; // debug
     // wire          rob_head_ready = ready[head]; // debug
     // wire          rob_head_value = value[head]; // debug

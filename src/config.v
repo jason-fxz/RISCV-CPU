@@ -22,4 +22,4 @@
 `define ROB_BR 2'b10 // branch (predict 0)
 `define ROB_BR1 2'b11 // branch (predict 1) 
 
-`define ICACHE_SIZE_BIT 1
+`define ICACHE_SIZE_BIT 3

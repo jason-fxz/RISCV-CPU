@@ -167,18 +167,19 @@ module cpu(
         .mem_wr(mem_wr),
         .io_buffer_full(io_buffer_full),
         .rob_clear(rob_clear),
-        // .inst1_valid(ic_q1_valid),
-        // .inst1_addr(ic_q1_addr),
-        // .inst1_result(ic_q1_result),
-        // .inst1_ready(ic_q1_ready),
+
+        .inst1_valid(ic_q1_valid),
+        .inst1_addr(ic_q1_addr),
+        .inst1_result(ic_q1_result),
+        .inst1_ready(ic_q1_ready),
+        .inst2_valid(ic_q2_valid),
         
-        .inst1_valid(mem_inst_valid),
-        .inst1_addr(mem_inst_addr),
-        .inst1_result(mem_inst_result),
-        .inst1_ready(mem_inst_ready),
-        .inst2_valid(0),
+        // .inst1_valid(mem_inst_valid),
+        // .inst1_addr(mem_inst_addr),
+        // .inst1_result(mem_inst_result),
+        // .inst1_ready(mem_inst_ready),
+        // .inst2_valid(0),
         
-        // .inst2_valid(ic_q2_valid),
         .inst2_addr(ic_q2_addr),
         .inst2_result(ic_q2_result),
         .inst2_ready(ic_q2_ready),
@@ -191,24 +192,24 @@ module cpu(
         .data_result(mem_data_result)
     );
 
-    // InstuctionCache i_cache (
-    //     .clk_in(clk_in),
-    //     .rst_in(rst_in),
-    //     .rdy_in(rdy_in),
-    //     .inst_valid(mem_inst_valid),
-    //     .inst_addr(mem_inst_addr),
-    //     .inst_res(mem_inst_result),
-    //     .inst_ready(mem_inst_ready),
-    //     .q1_valid(ic_q1_valid),
-    //     .q1_addr(ic_q1_addr),
-    //     .q1_result(ic_q1_result),
-    //     .q1_ready(ic_q1_ready),
-    //     .q2_valid(ic_q2_valid),
-    //     .q2_addr(ic_q2_addr),
-    //     .q2_result(ic_q2_result),
-    //     .q2_ready(ic_q2_ready),
-    //     .rob_clear(rob_clear)
-    // );
+    InstuctionCache i_cache (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .rdy_in(rdy_in),
+        .inst_valid(mem_inst_valid),
+        .inst_addr(mem_inst_addr),
+        .inst_res(mem_inst_result),
+        .inst_ready(mem_inst_ready),
+        .q1_valid(ic_q1_valid),
+        .q1_addr(ic_q1_addr),
+        .q1_result(ic_q1_result),
+        .q1_ready(ic_q1_ready),
+        .q2_valid(ic_q2_valid),
+        .q2_addr(ic_q2_addr),
+        .q2_result(ic_q2_result),
+        .q2_ready(ic_q2_ready),
+        .rob_clear(rob_clear)
+    );
 
     Fetcher fetcher (
         .clk_in(clk_in),
