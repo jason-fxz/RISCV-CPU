@@ -135,6 +135,28 @@ module DecoderC(
     assign f_next_pc = next_pc;
 
     always @* begin
+        rd = 0;
+        rs1 = 0;
+        rs2 = 0;
+        need_rs = 0;
+        need_lsb = 0;
+        opcode = 0;
+        use_rs1 = 0;
+        use_rs2 = 0;
+        use_rd = 0;
+        next_pc = 0;
+        next_addr = 0;
+        jal_addr = 0;
+        jalr_addr = 0;
+        d_rob_inst_value = 0;
+        opcode = 0;
+        d_inst_r1 = 0;
+        d_inst_r2 = 0;
+        d_lsb_inst_offset = 0;
+        d_lsb_inst_type = 0;
+        d_rob_inst_ready = 0;
+        d_rs_inst_type = 0;
+
         if (inst_valid) begin
             next_addr = inst_addr + (inst_data[1 : 0] == 2'b11 ? 32'd4 : 32'd2);
             d_rob_inst_value = 0;
@@ -362,9 +384,6 @@ module DecoderC(
             use_rs1 = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcStore || opcode == OpcBranch || opcode == OpcJALR;
             use_rs2 = opcode == OpcArithR || opcode == OpcStore || opcode == OpcBranch;
             use_rd = opcode == OpcArithR || opcode == OpcArithI || opcode == OpcLoad || opcode == OpcJALR || opcode == OpcJAL || opcode == OpcLUI || opcode == OpcAUIPC;
-        end
-        else begin
-
         end
     end
 
