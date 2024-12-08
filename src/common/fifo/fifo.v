@@ -27,7 +27,8 @@
 module fifo
 #(
   parameter DATA_BITS = 8,
-  parameter ADDR_BITS = 3
+  parameter ADDR_BITS = 3,
+  parameter INIT_FROM_FILE = 0
 )
 (
   input  wire                 clk,      // 50MHz system clock
@@ -55,15 +56,17 @@ wire [DATA_BITS-1:0] d_data;
 wire rd_en_prot;
 wire wr_en_prot;
 
+integer init_size;
+
 // FF update logic.  Synchronous reset.
 always @(posedge clk)
   begin
     if (reset)
       begin
         q_rd_ptr <= 0;
-        q_wr_ptr <= 0;
-        q_empty  <= 1'b1;
-        q_full   <= 1'b0;
+        q_wr_ptr <= init_size;
+        q_empty  <= (init_size == 0 ? 1'b1 : 1'b0);
+        q_full   <= (init_size == 2**ADDR_BITS ? 1'b1 : 1'b0);
       end
     else
       begin
@@ -74,6 +77,24 @@ always @(posedge clk)
         q_data_array[q_wr_ptr] <= d_data;
       end
   end
+
+initial begin: READ_INPUT_FROM_FILE
+  integer fd;
+  if (INIT_FROM_FILE) begin
+    fd = $fopen("test.in", "r");
+    if (fd == 0) begin
+      init_size = 0;
+    end
+    else begin
+      init_size = $fread(q_data_array, fd, 0, 2**ADDR_BITS);
+      if (!$feof(fd)) begin
+        $display("Error: Input is too large. Try increase the ADDR_BITS parameter.");
+        $finish(0);
+      end
+      $fclose(fd);
+    end
+  end
+end
 
 // Derive "protected" read/write signals.
 assign rd_en_prot = (rd_en && !q_empty);

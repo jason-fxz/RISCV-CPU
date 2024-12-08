@@ -120,7 +120,8 @@ reg  [ 7:0] q_io_dout, d_io_dout;
 
 // Input Buffer
 fifo #(.DATA_BITS(8),
-       .ADDR_BITS(IO_IN_BUF_WIDTH)) io_in_fifo
+       .ADDR_BITS(IO_IN_BUF_WIDTH),
+       .INIT_FROM_FILE(1)) io_in_fifo
 (
   .clk(clk),
   .reset(rst),
@@ -193,6 +194,7 @@ always @(posedge clk) begin
     // output
     if (sim_out_en) begin
       $write("%c", sim_out);
+      // $display("IO:out:%c[%d]",sim_out, sim_out);
     end
     // shutdown
     if (d_program_finish) begin

@@ -25,9 +25,9 @@ endif
 
 testcases:
 	# cd $(TESTCASE_DIR)
-	# docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
+	docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
 	# cd $(PWD)
-	make -C $(TESTCASE_DIR)
+	# make -C $(TESTCASE_DIR)
 
 _no_testcase_name_check:
 ifndef name
@@ -41,7 +41,9 @@ build_sim_test: testcases _no_testcase_name_check
 	@cp $(SIM_TESTCASE_DIR)/*$(name)*.c $(TESTSPACE_DIR)/test.c
 	@cp $(SIM_TESTCASE_DIR)/*$(name)*.data $(TESTSPACE_DIR)/test.data
 	@cp $(SIM_TESTCASE_DIR)/*$(name)*.dump $(TESTSPACE_DIR)/test.dump
+	@rm -f $(TESTSPACE_DIR)/test.in $(TESTSPACE_DIR)/test.ans
 	@cp $(SIM_TESTCASE_DIR)/*$(name)*.ans $(TESTSPACE_DIR)/test.ans
+	@find $(SIM_TESTCASE_DIR) -name '*$(name)*.in' -exec cp {} $(TESTSPACE_DIR)/test.in \;
 
 
 build_fpga_test: testcases _no_testcase_name_check
