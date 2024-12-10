@@ -115,7 +115,8 @@ module DecoderC(
     reg use_rd;
     reg [31 : 0] next_pc;
     reg [31 : 0] next_addr;
-    reg [31 : 0] jal_addr, jalr_addr;
+    reg [31 : 0] jal_addr, jalr_addr, br_addr;
+    reg predicate;
 
 
     reg [31 : 0] d_inst_r1, d_inst_r2;
@@ -156,6 +157,8 @@ module DecoderC(
         d_lsb_inst_type = 0;
         d_rob_inst_ready = 0;
         d_rs_inst_type = 0;
+        predicate = 0;
+        br_addr = 0;
 
         if (inst_valid) begin
             next_addr = inst_addr + (inst_data[1 : 0] == 2'b11 ? 32'd4 : 32'd2);
@@ -178,12 +181,14 @@ module DecoderC(
 
                     d_lsb_inst_type = {opcode == OpcStore, funct3};
                     d_lsb_inst_offset = opcode == OpcLoad ? immI : immS;
-                    
+
+                    predicate = immB[12]; // branch predict: backward take 1, forward take 0
+                    br_addr = inst_addr + {{19{immB[12]}}, immB, 1'b0};
                     d_rob_inst_value = opcode == OpcLUI ? {immU, 12'b0} :
                                         opcode == OpcAUIPC ? inst_addr + {immU, 12'b0} :
                                         opcode == OpcJAL ? next_addr :
                                         opcode == OpcJALR ? next_addr :
-                                        opcode == OpcBranch ? (inst_addr + {{19{immB[12]}}, immB, 1'b0}) : 0;
+                                        opcode == OpcBranch ? (predicate ? next_addr : br_addr) : 0;
                     
                 end
                 2'b01: begin
@@ -278,14 +283,18 @@ module DecoderC(
                             rs1 = inst_data[9 : 7] + 5'd8;
                             rs2 = 0;
                             d_rs_inst_type = {1'b1, 1'b0, 3'b000};
-                            d_rob_inst_value = $signed(inst_addr) + $signed({inst_data[12],inst_data[6:5],inst_data[2],inst_data[11:10],inst_data[4:3],1'b0});
+                            predicate = inst_data[12];
+                            br_addr = $signed(inst_addr) + $signed({inst_data[12],inst_data[6:5],inst_data[2],inst_data[11:10],inst_data[4:3],1'b0});
+                            d_rob_inst_value = predicate ? next_addr : br_addr;
                         end
                         3'b111: begin // CB c.bnez
                             opcode = OpcBranch;
                             rs1 = inst_data[9 : 7] + 5'd8;
                             rs2 = 0;
                             d_rs_inst_type = {1'b1, 1'b0, 3'b001};
-                            d_rob_inst_value = $signed(inst_addr) + $signed({inst_data[12],inst_data[6:5],inst_data[2],inst_data[11:10],inst_data[4:3],1'b0});
+                            predicate = inst_data[12];
+                            br_addr = $signed(inst_addr) + $signed({inst_data[12],inst_data[6:5],inst_data[2],inst_data[11:10],inst_data[4:3],1'b0});
+                            d_rob_inst_value = predicate ? next_addr : br_addr;
                         end
                     endcase 
                 end
@@ -376,7 +385,7 @@ module DecoderC(
 
             endcase
 
-            next_pc = opcode == OpcJALR ? jalr_addr : opcode == OpcJAL ? jal_addr : next_addr;
+            next_pc = opcode == OpcJALR ? jalr_addr : opcode == OpcJAL ? jal_addr : opcode == OpcBranch ? (predicate ? br_addr : next_addr) : next_addr;
             d_inst_r1 = r1_val;
             d_rob_inst_ready = opcode == OpcLUI || opcode == OpcAUIPC || opcode == OpcJAL || opcode == OpcJALR || opcode == OpcStore;
             need_rs = opcode == OpcArithR || opcode == OpcArithI  || opcode == OpcBranch;
@@ -445,7 +454,7 @@ module DecoderC(
 
             rob_inst_valid <= need_rob;
             rob_inst_type <= opcode == OpcStore ? `ROB_ST : 
-                        opcode == OpcBranch ? `ROB_BR : `ROB_RG;
+                        opcode == OpcBranch ? (predicate ? `ROB_BR1 : `ROB_BR) : `ROB_RG;
             
             rob_inst_rd <= use_rd ? rd : 0;
             rob_inst_addr <= inst_addr;

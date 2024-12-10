@@ -52,6 +52,8 @@ module ReorderBuffer (
     localparam TypeRG = `ROB_RG;
     localparam TypeST = `ROB_ST;
     localparam TypeBR = `ROB_BR;
+    localparam TypeBR1 = `ROB_BR1;
+
 
     /// ROB data
     reg                         busy  [0 : ROB_SIZE - 1]; // busy flag
@@ -136,7 +138,7 @@ module ReorderBuffer (
                 if (type[alu_rob_idx] == TypeRG) begin
                     value[alu_rob_idx] <= alu_value;
                 end
-                else if (type[alu_rob_idx] == TypeBR) begin
+                else if (type[alu_rob_idx] == TypeBR || type[alu_rob_idx] == TypeBR1) begin
                     // BR predict0
                     rd[alu_rob_idx] <= {4'b0, alu_value[0]};
                 end
@@ -165,6 +167,13 @@ module ReorderBuffer (
                     TypeBR: begin
                         // predict0
                         if (rd[head][0] == 1) begin
+                            next_pc <= value[head];
+                            clear <= 1;
+                        end
+                    end
+                    TypeBR1: begin
+                        // predict1
+                        if (rd[head][0] == 0) begin
                             next_pc <= value[head];
                             clear <= 1;
                         end
