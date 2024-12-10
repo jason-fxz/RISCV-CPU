@@ -10,7 +10,12 @@ module riscv_top
 	input wire			btnC,
 	output wire 		Tx,
 	input wire 			Rx,
-	output wire			led
+	output wire  [15:0] led,
+	input  wire  [15:0]	sw,
+	input wire			btnU,
+	input wire			btnD,
+	input wire			btnL,
+	input wire			btnR
 );
 
 localparam SYS_CLK_FREQ = 100000000;
@@ -147,7 +152,7 @@ wire hci_active;
 assign hci_active 	= hci_active_out & ~SIM;
 
 // indicates debug break
-assign led = hci_active;
+// assign led = hci_active;
 
 // pause cpu on hci active
 assign cpu_rdy		= (hci_active) ? 1'b0			 : 1'b1;
@@ -165,5 +170,37 @@ end
 assign cpu_ram_din 	= (q_hci_io_en)  ? hci_io_dout 	 : ram_dout;
 
 assign hci_ram_din 	= ram_dout;
+
+reg [15:0] led_r;
+reg [24:0] led_count;
+assign led = led_r;
+
+
+always @(posedge clk) begin
+	if (rst) begin
+		case(sw[1:0])
+			2'b00: led_r <= 16'b0000_0011_1100_0000;
+			2'b01: led_r <= 16'b1110_0000_0000_0111;
+			2'b10: led_r <= 16'b0000_1010_0101_0000;
+			2'b11: led_r <= 16'b0000_1000_0001_0000;
+		endcase
+		led_count <= 25'd0;
+	end
+	else begin
+		led_count <= led_count + 1;
+		if (led_count >= 25'd2000000) begin
+			led_count <= 25'd0;
+			if (!hci_active) begin
+				if (sw[2]) begin
+					led_r <= {led_r[14:0], led_r[15]};
+				end
+				else begin
+					led_r <= {led_r[0], led_r[15:1]};
+				end
+			end
+		end
+	end
+end
+
 
 endmodule
