@@ -2,6 +2,8 @@ testspace/*
 testcase/*
 fpga/*
 !.keep
+!testspace/judge.sh
+!testspace/fpga_judge.sh
 *.o
 *.vcd
 *.elf
