@@ -166,8 +166,6 @@ module riscv_top #(
 
   reg [15:0] led_r;
   reg [24:0] led_count;
-  assign led = led_r;
-
 
   always @(posedge clk) begin
     if (rst | hci_program_finish) begin
@@ -194,5 +192,41 @@ module riscv_top #(
       end
     end
   end
+
+
+  // PWM dimming for LEDs
+  reg [7:0] pwm_counter;
+  reg [15:0] pwm_led;
+  wire [8:0] pwm_duty;
+
+  always @(posedge clk) begin
+    if (rst) begin
+      pwm_counter <= 8'd0;
+      pwm_led <= 16'd0;
+    end else begin
+      pwm_counter <= pwm_counter + 1;
+      pwm_led <= (pwm_counter < pwm_duty) ? led_r : 16'd0;
+    end
+  end
+
+  reg [9:0] pwm_duty_r;
+  reg [24 : 0] breath_count; 
+  assign pwm_duty = pwm_duty_r[9] ? ~pwm_duty_r[8:0]: pwm_duty_r[8:0];
+
+  always @(posedge clk) begin
+    if (rst) begin
+      pwm_duty_r <= 10'd0;
+      breath_count <= 25'd0;
+    end else begin
+      breath_count <= breath_count + 1;
+      if (breath_count >= 25'd200000) begin
+        breath_count <= 25'd0;
+        pwm_duty_r <= pwm_duty_r + 1;
+      end
+    end
+  end
+  
+
+  assign led = hci_active ? pwm_led : led_r;
 
 endmodule
