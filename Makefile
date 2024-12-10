@@ -24,10 +24,8 @@ all: testcases build_sim
 endif
 
 testcases:
-	# cd $(TESTCASE_DIR)
-	docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
-	# cd $(PWD)
-	# make -C $(TESTCASE_DIR)
+	# docker run -it --rm -v "$(TESTCASE_DIR):/app" -w /app my-archlinux-image  make all
+	@make -C $(TESTCASE_DIR)
 
 _no_testcase_name_check:
 ifndef name
@@ -48,7 +46,7 @@ build_sim_test: testcases _no_testcase_name_check
 
 build_fpga_test: testcases _no_testcase_name_check
 	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.c $(TESTSPACE_DIR)/test.c
-	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.data $(TESTSPACE_DIR)/test.data
+	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.elf $(TESTSPACE_DIR)/test.elf
 	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.dump $(TESTSPACE_DIR)/test.dump
 # sometimes the input and output file not exist
 	@rm -f $(TESTSPACE_DIR)/test.in $(TESTSPACE_DIR)/test.ans
@@ -65,9 +63,23 @@ fpga_run_mode := -T # or -T
 
 # Please manually load .bit file to FPGA
 run_fpga: build_fpga_test
-	cd $(TESTSPACE_DIR) && if [ -f test.in ]; then $(PWD)/fpga/fpga test.data test.in $(fpga_device) $(fpga_run_mode); else $(PWD)/fpga/fpga test.data $(fpga_device) $(fpga_run_mode); fi
+	@cd $(TESTSPACE_DIR) && if [ -f test.in ]; then stdbuf -o0 $(PWD)/fpga/fpga test.elf test.in $(fpga_device) $(fpga_run_mode) | tee test.out; else stdbuf -o0 $(PWD)/fpga/fpga test.elf $(fpga_device) $(fpga_run_mode) | tee test.out; fi && bash ./fpga_judge.sh
+
+test_list := testsleep queens expr lvalue2 magic looper superloop tak uartboom array_test2 pi multiarray manyarguments hanoi qsort gcd statement_test basicopt1 bulgarian array_test1
+run_fpga_all: 
+	@for name in $(test_list); do \
+		echo -e "\033[34mrun on test $$name\033[0m"; \
+		$(MAKE) run_fpga name=$$name 2>/dev/null >/dev/null; \
+		if [ $$? -eq 0 ]; then \
+			echo -e "\033[32m$$name passed\033[0m"; \
+		else \
+			echo -e "\033[31m$$name failed\033[0m"; \
+		fi; \
+		echo "press reset"; \
+		sleep 1; \
+	done
 
 clean:
 	rm -f $(TESTSPACE_DIR)/test*
 
-.PHONY: all build_sim build_sim_test run_sim clean
+.PHONY: all build_sim build_sim_test run_sim clean run_fpga_all run_fpga
