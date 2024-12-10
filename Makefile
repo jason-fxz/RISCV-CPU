@@ -65,17 +65,23 @@ fpga_run_mode := -T # or -T
 run_fpga: build_fpga_test
 	@cd $(TESTSPACE_DIR) && if [ -f test.in ]; then stdbuf -o0 $(PWD)/fpga/fpga test.elf test.in $(fpga_device) $(fpga_run_mode) | tee test.out; else stdbuf -o0 $(PWD)/fpga/fpga test.elf $(fpga_device) $(fpga_run_mode) | tee test.out; fi && bash ./fpga_judge.sh
 
+# "heart" runs too slow, so we exclude it 
+# "testsleep" has no answer, you should manually check the output
 test_list := testsleep queens expr lvalue2 magic looper superloop tak uartboom array_test2 pi multiarray manyarguments hanoi qsort gcd statement_test basicopt1 bulgarian array_test1
+
 run_fpga_all: 
 	@for name in $(test_list); do \
 		echo -e "\033[34mrun on test $$name\033[0m"; \
-		$(MAKE) run_fpga name=$$name 2>/dev/null >/dev/null; \
-		if [ $$? -eq 0 ]; then \
+		timeout 30s $(MAKE) run_fpga name=$$name 2>/dev/null >/dev/null; \
+		retval=$$?; \
+		if [ $$retval -eq 124 ]; then \
+			echo -e "\033[33m$$name TLE >30s\033[0m"; \
+			read -p "Please press the reset button on the FPGA, then press Enter to continue..."; \
+		elif [ $$retval -eq 0 ]; then \
 			echo -e "\033[32m$$name passed\033[0m"; \
 		else \
 			echo -e "\033[31m$$name failed\033[0m"; \
 		fi; \
-		echo "press reset"; \
 		sleep 1; \
 	done
 
