@@ -30,17 +30,21 @@ module Fetcher(
     reg [31 : 0] tmp_inst_result;
     reg          tmp_inst_valid;
 
-    wire [31 : 0] next_pc;
+    // wire [31 : 0] next_pc;
 
-    assign mem_valid = dc_ok ? 1 : mem_ready ? 0 : enable_fetch;
-    assign mem_addr = dc_ok ? next_pc : PC;
+    assign mem_valid = (dc_ok || mem_ready) ? 0 : enable_fetch;
+    assign mem_addr = PC;
 
     assign inst_valid = mem_ready || tmp_inst_valid;
     assign inst_result = mem_ready ? mem_result : tmp_inst_result;
     assign inst_addr = PC;
+    // assign inst_valid = tmp_inst_valid;
+    // assign inst_result = tmp_inst_result;
+    // assign inst_addr = tmp_inst_addr;
 
 
-    assign next_pc = rob_clear ? rob_next_pc : dc_next_pc;
+
+    // assign next_pc = rob_clear ? rob_next_pc : dc_next_pc;
 
 
     always @(posedge clk_in) begin
@@ -54,7 +58,7 @@ module Fetcher(
         else if (rob_clear) begin
             
             // $display("clear!! %0t next_pc = %h", $time, next_pc);
-            PC <= next_pc;
+            PC <= rob_next_pc;
             enable_fetch <= 1;
             tmp_inst_addr <= 0;
             tmp_inst_result <= 0;
@@ -73,7 +77,7 @@ module Fetcher(
             end
             // decoder get next
             if (dc_ok) begin
-                PC <= next_pc;
+                PC <= dc_next_pc;
                 enable_fetch <= 1;
                 tmp_inst_addr <= 0;
                 tmp_inst_result <= 0;

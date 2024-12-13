@@ -83,7 +83,7 @@ module InstuctionCache #(
             // do nothing
         end
         else begin
-            inst_ready <= hit1 && hit2;
+            inst_ready <= hit1 && hit2 && inst_valid;
             inst_res <= inst_res_next;
             if (q1_ready) begin
                 valid[idx1] <= 1;
